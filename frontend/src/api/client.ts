@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: 'http://localhost:5085/api/v1' });
+const api = axios.create({ baseURL: '/api/v1' });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('td_token');
