@@ -70,7 +70,7 @@ export interface StrategyConfig {
 
 // --- API helpers ---
 export const auth = {
-  login: (password: string) => axios.post<{ token: string }>('http://localhost:5085/api/v1/auth/login', { password }),
+  login: (password: string) => api.post<{ token: string }>('/auth/login', { password }),
 };
 export interface NoCandidate { noCandidate: true; rejectReason: string; }
 export interface CandidateSet { candidates: Proposal[]; }

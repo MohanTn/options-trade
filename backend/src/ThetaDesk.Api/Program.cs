@@ -80,9 +80,15 @@ builder.Services.AddHealthChecks()
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// CORS — allow the React dev server
+// CORS — allow the React dev server, plus any extra origins from config
+// (e.g. Cors__AllowedOrigins=http://192.168.0.184:5173 for LAN access to the API directly)
+var corsOrigins = new[] { "http://localhost:5173", "http://localhost:3000" }
+    .Concat((builder.Configuration["Cors:AllowedOrigins"] ?? "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+    .Distinct()
+    .ToArray();
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
-    p.WithOrigins("http://localhost:5173", "http://localhost:3000")
+    p.WithOrigins(corsOrigins)
      .AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
 var app = builder.Build();
