@@ -1,0 +1,352 @@
+{
+  "backend/ThetaDesk.sln": {
+    "mtime": 1782655306.086254,
+    "ast_hash": "345b2514dcfde66125a6425411a88345",
+    "semantic_hash": "345b2514dcfde66125a6425411a88345"
+  },
+  "backend/src/ThetaDesk.Api/Controllers/OrdersController.cs": {
+    "mtime": 1782754206.4188333,
+    "ast_hash": "2d9e5c36c2a091f29c6e1efe710035e1",
+    "semantic_hash": "2d9e5c36c2a091f29c6e1efe710035e1"
+  },
+  "backend/src/ThetaDesk.Api/Controllers/PortfolioController.cs": {
+    "mtime": 1782748424.696035,
+    "ast_hash": "13b2ec3fb1c0be7e6bc22cf4fade06ee",
+    "semantic_hash": "13b2ec3fb1c0be7e6bc22cf4fade06ee"
+  },
+  "backend/src/ThetaDesk.Api/Controllers/PositionsController.cs": {
+    "mtime": 1782711142.2968075,
+    "ast_hash": "681c0148d1f9683951484a813fafb11c",
+    "semantic_hash": "681c0148d1f9683951484a813fafb11c"
+  },
+  "backend/src/ThetaDesk.Api/Controllers/ProposalsController.cs": {
+    "mtime": 1782755469.3272238,
+    "ast_hash": "83bbfe0e5221d04c107e32028e3448e4",
+    "semantic_hash": "83bbfe0e5221d04c107e32028e3448e4"
+  },
+  "backend/src/ThetaDesk.Api/Controllers/StrategiesController.cs": {
+    "mtime": 1782715904.3280938,
+    "ast_hash": "b29782865cfd1eabc565aadfbf45180d",
+    "semantic_hash": "b29782865cfd1eabc565aadfbf45180d"
+  },
+  "backend/src/ThetaDesk.Api/Controllers/SystemController.cs": {
+    "mtime": 1782755077.7229266,
+    "ast_hash": "a67714704ae8f57c579a11b929702fc7",
+    "semantic_hash": "a67714704ae8f57c579a11b929702fc7"
+  },
+  "backend/src/ThetaDesk.Api/Controllers/WeatherForecastController.cs": {
+    "mtime": 1782655366.8547943,
+    "ast_hash": "4ef690a591983bd25c40f459ff9c19c1",
+    "semantic_hash": "4ef690a591983bd25c40f459ff9c19c1"
+  },
+  "backend/src/ThetaDesk.Api/Kite/IKiteClient.cs": {
+    "mtime": 1782718616.6469386,
+    "ast_hash": "b7d53e962de737da605385784cdb5b21",
+    "semantic_hash": "b7d53e962de737da605385784cdb5b21"
+  },
+  "backend/src/ThetaDesk.Api/Kite/KiteClient.cs": {
+    "mtime": 1782748380.853884,
+    "ast_hash": "ce036f5783f2141da3e335e9acee305c",
+    "semantic_hash": "ce036f5783f2141da3e335e9acee305c"
+  },
+  "backend/src/ThetaDesk.Api/Kite/PaperKiteClient.cs": {
+    "mtime": 1782718638.1450443,
+    "ast_hash": "e3ddef31731205cd758a18ed9e664259",
+    "semantic_hash": "e3ddef31731205cd758a18ed9e664259"
+  },
+  "backend/src/ThetaDesk.Api/Program.cs": {
+    "mtime": 1782716994.5884726,
+    "ast_hash": "5b34d34b28ffd9654a5c6d0a0c862137",
+    "semantic_hash": "5b34d34b28ffd9654a5c6d0a0c862137"
+  },
+  "backend/src/ThetaDesk.Api/Properties/launchSettings.json": {
+    "mtime": 1782653862.6945953,
+    "ast_hash": "3e7339ec012c59ec5e2ee60e23e32e1d",
+    "semantic_hash": "3e7339ec012c59ec5e2ee60e23e32e1d"
+  },
+  "backend/src/ThetaDesk.Api/Services/AuditService.cs": {
+    "mtime": 1782655366.854552,
+    "ast_hash": "7ca1c4bc64aa24380e4efe0be458dcd8",
+    "semantic_hash": "7ca1c4bc64aa24380e4efe0be458dcd8"
+  },
+  "backend/src/ThetaDesk.Api/Services/BrokerSyncService.cs": {
+    "mtime": 1782748575.3015537,
+    "ast_hash": "c66c7ef78df6d1ba357db3e36f9e3043",
+    "semantic_hash": "c66c7ef78df6d1ba357db3e36f9e3043"
+  },
+  "backend/src/ThetaDesk.Api/Services/SignalEngine.cs": {
+    "mtime": 1782755045.2008188,
+    "ast_hash": "8b4b8628b2f55cbe3e2fc25839a13ad6",
+    "semantic_hash": "8b4b8628b2f55cbe3e2fc25839a13ad6"
+  },
+  "backend/src/ThetaDesk.Api/Services/SizingEngine.cs": {
+    "mtime": 1782712698.7660525,
+    "ast_hash": "ae0b2b18fb912fc38ba928b625844f05",
+    "semantic_hash": "ae0b2b18fb912fc38ba928b625844f05"
+  },
+  "backend/src/ThetaDesk.Api/ThetaDesk.Api.csproj": {
+    "mtime": 1782655355.8740356,
+    "ast_hash": "7ed22e9078c7299a72f7002c087e8548",
+    "semantic_hash": "7ed22e9078c7299a72f7002c087e8548"
+  },
+  "backend/src/ThetaDesk.Api/WeatherForecast.cs": {
+    "mtime": 1782655366.8540714,
+    "ast_hash": "00d62de1695589c4f049694ac9e67d28",
+    "semantic_hash": "00d62de1695589c4f049694ac9e67d28"
+  },
+  "backend/src/ThetaDesk.Api/appsettings.Development.json": {
+    "mtime": 1782653862.6971169,
+    "ast_hash": "804b473502a4c415cf75db61c56c32aa",
+    "semantic_hash": "804b473502a4c415cf75db61c56c32aa"
+  },
+  "backend/src/ThetaDesk.Api/appsettings.json": {
+    "mtime": 1782710744.5301826,
+    "ast_hash": "b4a0d89cd93a4261222f744321fbd4cd",
+    "semantic_hash": "b4a0d89cd93a4261222f744321fbd4cd"
+  },
+  "backend/src/ThetaDesk.Data/Migrations/20260628141745_InitialThetaDesk.Designer.cs": {
+    "mtime": 1782656266.054109,
+    "ast_hash": "05f6b1fbd1248d1d0a00286cd2075527",
+    "semantic_hash": "05f6b1fbd1248d1d0a00286cd2075527"
+  },
+  "backend/src/ThetaDesk.Data/Migrations/20260628141745_InitialThetaDesk.cs": {
+    "mtime": 1782656266.0539846,
+    "ast_hash": "037122d1cb47b5eabb9cfbfbd3a84a80",
+    "semantic_hash": "037122d1cb47b5eabb9cfbfbd3a84a80"
+  },
+  "backend/src/ThetaDesk.Data/Migrations/20260629060052_ConfigurableStrategies.Designer.cs": {
+    "mtime": 1782712852.9597518,
+    "ast_hash": "45013670b6ea8ac87dcbcc0d47a51c8c",
+    "semantic_hash": "45013670b6ea8ac87dcbcc0d47a51c8c"
+  },
+  "backend/src/ThetaDesk.Data/Migrations/20260629060052_ConfigurableStrategies.cs": {
+    "mtime": 1782712887.7838552,
+    "ast_hash": "858f8bef113a02cc6f487ef25d92454d",
+    "semantic_hash": "858f8bef113a02cc6f487ef25d92454d"
+  },
+  "backend/src/ThetaDesk.Data/Migrations/20260629155442_AddFundLotSize.Designer.cs": {
+    "mtime": 1782748482.5654495,
+    "ast_hash": "085ea39df3ce5842522946e607367fe7",
+    "semantic_hash": "085ea39df3ce5842522946e607367fe7"
+  },
+  "backend/src/ThetaDesk.Data/Migrations/20260629155442_AddFundLotSize.cs": {
+    "mtime": 1782748499.4002924,
+    "ast_hash": "8b1a36ca522cc082f9cf5cc049f086d6",
+    "semantic_hash": "8b1a36ca522cc082f9cf5cc049f086d6"
+  },
+  "backend/src/ThetaDesk.Data/Migrations/ThetaDeskDbContextModelSnapshot.cs": {
+    "mtime": 1782748482.565905,
+    "ast_hash": "d0314b544fb0a814e809b660da5c3d26",
+    "semantic_hash": "d0314b544fb0a814e809b660da5c3d26"
+  },
+  "backend/src/ThetaDesk.Data/ThetaDesk.Data.csproj": {
+    "mtime": 1782655317.7539115,
+    "ast_hash": "a7d231b203305def97457f758aa16741",
+    "semantic_hash": "a7d231b203305def97457f758aa16741"
+  },
+  "backend/src/ThetaDesk.Data/ThetaDeskDbContext.cs": {
+    "mtime": 1782712614.7385437,
+    "ast_hash": "193c9fa50f2983941dba3aa5db381d52",
+    "semantic_hash": "193c9fa50f2983941dba3aa5db381d52"
+  },
+  "backend/src/ThetaDesk.Data/ThetaDeskDbContextFactory.cs": {
+    "mtime": 1782656240.6536138,
+    "ast_hash": "b11037cf6e4bc79b3729b779eb58f64d",
+    "semantic_hash": "b11037cf6e4bc79b3729b779eb58f64d"
+  },
+  "backend/src/ThetaDesk.Domain/Entities/Entities.cs": {
+    "mtime": 1782748301.5266109,
+    "ast_hash": "667e488483044bd9c254417cd3f39678",
+    "semantic_hash": "667e488483044bd9c254417cd3f39678"
+  },
+  "backend/src/ThetaDesk.Domain/Enums/Enums.cs": {
+    "mtime": 1782712527.9464307,
+    "ast_hash": "a16f2e3abd3df26deefc6b44b2b28841",
+    "semantic_hash": "a16f2e3abd3df26deefc6b44b2b28841"
+  },
+  "backend/src/ThetaDesk.Domain/ThetaDesk.Domain.csproj": {
+    "mtime": 1782653860.8291109,
+    "ast_hash": "a09b26111c660da58a84b7d66e16c694",
+    "semantic_hash": "a09b26111c660da58a84b7d66e16c694"
+  },
+  "backend/src/ThetaDesk.Greeks/Black76.cs": {
+    "mtime": 1782654088.5475154,
+    "ast_hash": "7a447ab5346bc4feab553e7a6ed85656",
+    "semantic_hash": "7a447ab5346bc4feab553e7a6ed85656"
+  },
+  "backend/src/ThetaDesk.Greeks/GreeksAggregator.cs": {
+    "mtime": 1782654098.5926528,
+    "ast_hash": "ee907366bc39cb98b0d7fe2931e5809b",
+    "semantic_hash": "ee907366bc39cb98b0d7fe2931e5809b"
+  },
+  "backend/src/ThetaDesk.Greeks/ThetaDesk.Greeks.csproj": {
+    "mtime": 1782653861.6965797,
+    "ast_hash": "a09b26111c660da58a84b7d66e16c694",
+    "semantic_hash": "a09b26111c660da58a84b7d66e16c694"
+  },
+  "backend/src/ThetaDesk.Workers/Program.cs": {
+    "mtime": 1782655404.5711942,
+    "ast_hash": "50fe57bce659fea5a15553c53450612c",
+    "semantic_hash": "50fe57bce659fea5a15553c53450612c"
+  },
+  "backend/src/ThetaDesk.Workers/Properties/launchSettings.json": {
+    "mtime": 1782653864.133357,
+    "ast_hash": "e5f552c2464a93281944ea4258917efb",
+    "semantic_hash": "e5f552c2464a93281944ea4258917efb"
+  },
+  "backend/src/ThetaDesk.Workers/ThetaDesk.Workers.csproj": {
+    "mtime": 1782655375.2110984,
+    "ast_hash": "b39227f41cbc2df7754177e97ef84fe6",
+    "semantic_hash": "b39227f41cbc2df7754177e97ef84fe6"
+  },
+  "backend/src/ThetaDesk.Workers/Workers.cs": {
+    "mtime": 1782712765.9389706,
+    "ast_hash": "1abd12041ab82b314be3d1e422385936",
+    "semantic_hash": "1abd12041ab82b314be3d1e422385936"
+  },
+  "backend/src/ThetaDesk.Workers/appsettings.Development.json": {
+    "mtime": 1782653864.1361217,
+    "ast_hash": "efb942c8788e089b2e52cbbff0b04b7e",
+    "semantic_hash": "efb942c8788e089b2e52cbbff0b04b7e"
+  },
+  "backend/src/ThetaDesk.Workers/appsettings.json": {
+    "mtime": 1782653864.1361217,
+    "ast_hash": "efb942c8788e089b2e52cbbff0b04b7e",
+    "semantic_hash": "efb942c8788e089b2e52cbbff0b04b7e"
+  },
+  "frontend/.oxlintrc.json": {
+    "mtime": 1782654627.3084733,
+    "ast_hash": "029f4905006c1fffd96bc863e2d98d3e",
+    "semantic_hash": "029f4905006c1fffd96bc863e2d98d3e"
+  },
+  "frontend/package.json": {
+    "mtime": 1782654642.8347034,
+    "ast_hash": "b8efd30c75650043a8fac518880cf1a1",
+    "semantic_hash": "b8efd30c75650043a8fac518880cf1a1"
+  },
+  "frontend/src/App.tsx": {
+    "mtime": 1782654788.6371887,
+    "ast_hash": "6f2b876ce2710a79d2c30a4b6def8668",
+    "semantic_hash": "6f2b876ce2710a79d2c30a4b6def8668"
+  },
+  "frontend/src/api/client.ts": {
+    "mtime": 1782755151.6331713,
+    "ast_hash": "d0e588d746c08e2fcf8afc18fc175584",
+    "semantic_hash": "d0e588d746c08e2fcf8afc18fc175584"
+  },
+  "frontend/src/components/FundSettings.tsx": {
+    "mtime": 1782748519.397361,
+    "ast_hash": "d8ba3e25ad2ceb49083117262af60022",
+    "semantic_hash": "d8ba3e25ad2ceb49083117262af60022"
+  },
+  "frontend/src/components/PayoffSimulator.tsx": {
+    "mtime": 1782759660.4505663,
+    "ast_hash": "3f868835501ea4b443f28865cbff70c3",
+    "semantic_hash": "3f868835501ea4b443f28865cbff70c3"
+  },
+  "frontend/src/components/PositionCard.tsx": {
+    "mtime": 1782759547.614474,
+    "ast_hash": "91d7f7acf207b5ee700fb1e4776a0cde",
+    "semantic_hash": "91d7f7acf207b5ee700fb1e4776a0cde"
+  },
+  "frontend/src/components/ProposalCandidates.tsx": {
+    "mtime": 1782755178.913905,
+    "ast_hash": "d26916ece0f20728f429e0934e62111a",
+    "semantic_hash": "d26916ece0f20728f429e0934e62111a"
+  },
+  "frontend/src/components/ProposalReview.tsx": {
+    "mtime": 1782755189.835298,
+    "ast_hash": "f976fb97b63a5e4ab0a4b6973a0c9deb",
+    "semantic_hash": "f976fb97b63a5e4ab0a4b6973a0c9deb"
+  },
+  "frontend/src/components/StrategySettings.tsx": {
+    "mtime": 1782713088.0157907,
+    "ast_hash": "5071c16cc84ecd9858aefe9c5aa7073a",
+    "semantic_hash": "5071c16cc84ecd9858aefe9c5aa7073a"
+  },
+  "frontend/src/hooks/useMonitorSounds.ts": {
+    "mtime": 1782717847.0889907,
+    "ast_hash": "8c64c329c84846b6c3dc96440bebfc5a",
+    "semantic_hash": "8c64c329c84846b6c3dc96440bebfc5a"
+  },
+  "frontend/src/main.tsx": {
+    "mtime": 1782654780.4269173,
+    "ast_hash": "09a7aa54b33f76ea0f214acdb9121d5b",
+    "semantic_hash": "09a7aa54b33f76ea0f214acdb9121d5b"
+  },
+  "frontend/src/pages/Cockpit.tsx": {
+    "mtime": 1782759586.7826378,
+    "ast_hash": "3b26bd74fc6e3764c069724afc1a8fa7",
+    "semantic_hash": "3b26bd74fc6e3764c069724afc1a8fa7"
+  },
+  "frontend/src/pages/Login.tsx": {
+    "mtime": 1782654678.3728294,
+    "ast_hash": "50cd6d5c462b02f9db56456e0087bfac",
+    "semantic_hash": "50cd6d5c462b02f9db56456e0087bfac"
+  },
+  "frontend/tsconfig.app.json": {
+    "mtime": 1782654627.3122494,
+    "ast_hash": "136630b5accce1ca50663df229534a26",
+    "semantic_hash": "136630b5accce1ca50663df229534a26"
+  },
+  "frontend/tsconfig.json": {
+    "mtime": 1782654627.3124015,
+    "ast_hash": "a3d39fa780ebff65444de257f291ce6c",
+    "semantic_hash": "a3d39fa780ebff65444de257f291ce6c"
+  },
+  "frontend/tsconfig.node.json": {
+    "mtime": 1782654627.3125741,
+    "ast_hash": "f9cb81ddcea69ffdab672fc8c48dca66",
+    "semantic_hash": "f9cb81ddcea69ffdab672fc8c48dca66"
+  },
+  "frontend/vite.config.ts": {
+    "mtime": 1782654627.3127468,
+    "ast_hash": "88439104b3c207f17d33ef3160e3b080",
+    "semantic_hash": "88439104b3c207f17d33ef3160e3b080"
+  },
+  "arch-nifty-options-theta-fund.html": {
+    "mtime": 1782653479.1958318,
+    "ast_hash": "648b1bc1f0c2b9d48326e3aa7d354c20",
+    "semantic_hash": "648b1bc1f0c2b9d48326e3aa7d354c20"
+  },
+  "docker-compose.yml": {
+    "mtime": 1782714291.867822,
+    "ast_hash": "d079da06caaf9319c099e28af65779bd",
+    "semantic_hash": "d079da06caaf9319c099e28af65779bd"
+  },
+  "frontend/README.md": {
+    "mtime": 1782654627.3078415,
+    "ast_hash": "10495bfcc6c568eca4dab6dd5df795d3",
+    "semantic_hash": "10495bfcc6c568eca4dab6dd5df795d3"
+  },
+  "frontend/index.html": {
+    "mtime": 1782664868.2184086,
+    "ast_hash": "fd9fb32ccd3b43e80c87abebc92410c9",
+    "semantic_hash": "fd9fb32ccd3b43e80c87abebc92410c9"
+  },
+  "mockups/ui-mocks-dashboard.html": {
+    "mtime": 1782664086.6457713,
+    "ast_hash": "08d00e7c3d7b2c8795beb0fec9e2c8de",
+    "semantic_hash": "08d00e7c3d7b2c8795beb0fec9e2c8de"
+  },
+  "frontend/public/favicon.svg": {
+    "mtime": 1782654627.3095703,
+    "ast_hash": "7e840862161341271697daa99a40d76b",
+    "semantic_hash": "7e840862161341271697daa99a40d76b"
+  },
+  "frontend/public/icons.svg": {
+    "mtime": 1782654627.3098378,
+    "ast_hash": "3b4fcfcf393eca4d264dca4a4663bc37",
+    "semantic_hash": "3b4fcfcf393eca4d264dca4a4663bc37"
+  },
+  "frontend/src/assets/hero.png": {
+    "mtime": 1782654627.3111694,
+    "ast_hash": "aead493361b27e7510691c5d7072dfc1",
+    "semantic_hash": "aead493361b27e7510691c5d7072dfc1"
+  },
+  "frontend/src/assets/vite.svg": {
+    "mtime": 1782654627.3116698,
+    "ast_hash": "9960a24288958394ac50e57ff638b036",
+    "semantic_hash": "9960a24288958394ac50e57ff638b036"
+  }
+}
