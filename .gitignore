@@ -1,0 +1,23 @@
+# Secrets — never commit
+.env
+
+# .NET
+**/bin/
+**/obj/
+*.user
+*.db
+*.db-shm
+*.db-wal
+*_design.db
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Logs
+logs/
+*.log
+
+# Docker
+.dockerignore

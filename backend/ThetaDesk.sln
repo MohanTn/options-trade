@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{7A6E6F03-357F-475E-BB58-4405A53588E2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThetaDesk.Domain", "src\ThetaDesk.Domain\ThetaDesk.Domain.csproj", "{10791C73-125E-4169-8D90-BF067B040849}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThetaDesk.Greeks", "src\ThetaDesk.Greeks\ThetaDesk.Greeks.csproj", "{6831914F-7249-4DD9-BF65-1508FD33C0CB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThetaDesk.Api", "src\ThetaDesk.Api\ThetaDesk.Api.csproj", "{07CE93A4-962E-4E00-BE4D-0A49E8E229F5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThetaDesk.Workers", "src\ThetaDesk.Workers\ThetaDesk.Workers.csproj", "{AE76482E-1E6D-444B-8E2B-79A421762EF8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThetaDesk.Data", "src\ThetaDesk.Data\ThetaDesk.Data.csproj", "{2EDFD690-F82E-4AB0-9E0D-906C097BD79A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{10791C73-125E-4169-8D90-BF067B040849}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10791C73-125E-4169-8D90-BF067B040849}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10791C73-125E-4169-8D90-BF067B040849}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10791C73-125E-4169-8D90-BF067B040849}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6831914F-7249-4DD9-BF65-1508FD33C0CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6831914F-7249-4DD9-BF65-1508FD33C0CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6831914F-7249-4DD9-BF65-1508FD33C0CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6831914F-7249-4DD9-BF65-1508FD33C0CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07CE93A4-962E-4E00-BE4D-0A49E8E229F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07CE93A4-962E-4E00-BE4D-0A49E8E229F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07CE93A4-962E-4E00-BE4D-0A49E8E229F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07CE93A4-962E-4E00-BE4D-0A49E8E229F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE76482E-1E6D-444B-8E2B-79A421762EF8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE76482E-1E6D-444B-8E2B-79A421762EF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE76482E-1E6D-444B-8E2B-79A421762EF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE76482E-1E6D-444B-8E2B-79A421762EF8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EDFD690-F82E-4AB0-9E0D-906C097BD79A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EDFD690-F82E-4AB0-9E0D-906C097BD79A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EDFD690-F82E-4AB0-9E0D-906C097BD79A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EDFD690-F82E-4AB0-9E0D-906C097BD79A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{10791C73-125E-4169-8D90-BF067B040849} = {7A6E6F03-357F-475E-BB58-4405A53588E2}
+		{6831914F-7249-4DD9-BF65-1508FD33C0CB} = {7A6E6F03-357F-475E-BB58-4405A53588E2}
+		{07CE93A4-962E-4E00-BE4D-0A49E8E229F5} = {7A6E6F03-357F-475E-BB58-4405A53588E2}
+		{AE76482E-1E6D-444B-8E2B-79A421762EF8} = {7A6E6F03-357F-475E-BB58-4405A53588E2}
+		{2EDFD690-F82E-4AB0-9E0D-906C097BD79A} = {7A6E6F03-357F-475E-BB58-4405A53588E2}
+	EndGlobalSection
+EndGlobal

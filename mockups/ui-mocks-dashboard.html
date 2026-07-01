@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UI Mocks — ThetaDesk Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f1f5f9; margin: 0; }
+  .picker-header { padding: 1.5rem 2rem; border-bottom: 1px solid #1e293b; }
+  .picker-header h1 { margin: 0; font-size: 1.3rem; }
+  .picker-header p { margin: .4rem 0 0; color: #94a3b8; font-size: .85rem; }
+  .variant-nav { display: flex; gap: .5rem; padding: 1rem 2rem; background: #1e293b; flex-wrap: wrap; }
+  .variant-nav button { padding: .5rem 1.25rem; border-radius: 6px; border: 2px solid transparent;
+    background: #334155; color: #f1f5f9; cursor: pointer; font-size: .85rem; }
+  .variant-nav button.active { border-color: #6366f1; background: #312e81; }
+  .variant-panel { display: none; padding: 2rem; }
+  .variant-panel.active { display: block; }
+  .variant-label { font-size: .7rem; font-weight: 700; letter-spacing: .1em; color: #6366f1; text-transform: uppercase; margin-bottom: .4rem; }
+  .variant-title { font-size: 1.2rem; font-weight: 700; margin-bottom: .4rem; }
+  .rationale { background: #1e293b; border-left: 3px solid #6366f1; padding: .6rem 1rem;
+    border-radius: 0 6px 6px 0; font-size: .85rem; color: #94a3b8; margin-bottom: 1.25rem; }
+  .mock-frame { background: #fff; color: #0f172a; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,.5); min-height: 600px; }
+  .choose-btn { margin-top: 1.25rem; padding: .7rem 1.75rem; background: #6366f1; color: #fff;
+    border: none; border-radius: 8px; font-size: .95rem; font-weight: 600; cursor: pointer; }
+  .chosen-banner { display: none; margin-top: 1rem; padding: .9rem 1.4rem; background: #14532d;
+    border: 1px solid #16a34a; border-radius: 8px; color: #86efac; font-weight: 600; }
+
+  /* ─── Shared Mock Tokens ─── */
+  .m-green { color: #16a34a; }
+  .m-red { color: #dc2626; }
+  .m-muted { color: #64748b; }
+  .m-bold { font-weight: 700; }
+
+  /* ═══════════════════════════════════════════
+     VARIANT A — Terminal Dark
+  ═══════════════════════════════════════════ */
+  .a-root { display: grid; grid-template-columns: 220px 1fr; min-height: 700px; background: #080e1a; color: #c9d4e8; font-family: 'Courier New', monospace; font-size: .82rem; }
+  .a-sidebar { background: #0b1220; border-right: 1px solid #1a2540; padding: 0; display: flex; flex-direction: column; }
+  .a-logo { padding: 16px 18px; border-bottom: 1px solid #1a2540; display: flex; align-items: center; gap: 10px; }
+  .a-logo-icon { width: 28px; height: 28px; background: linear-gradient(135deg,#2563eb,#7c3aed); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 900; font-family: system-ui; }
+  .a-logo-text { font-size: .85rem; font-weight: 700; color: #e2e8f0; font-family: system-ui; letter-spacing: .05em; }
+  .a-nav-section { padding: 10px 0; border-bottom: 1px solid #1a2540; }
+  .a-nav-label { padding: 4px 18px; font-size: .65rem; letter-spacing: .12em; color: #475569; text-transform: uppercase; font-family: system-ui; }
+  .a-nav-item { padding: 7px 18px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #8898aa; transition: background .15s; border-left: 3px solid transparent; }
+  .a-nav-item:hover { background: #111d2e; color: #e2e8f0; }
+  .a-nav-item.active { color: #60a5fa; border-left-color: #2563eb; background: #111d2e; font-family: system-ui; }
+  .a-nav-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .a-sidebar-footer { margin-top: auto; padding: 12px 18px; border-top: 1px solid #1a2540; font-size: .72rem; color: #475569; font-family: system-ui; }
+  .a-kill-badge { display: inline-block; padding: 2px 8px; background: #16a34a22; color: #4ade80; border: 1px solid #16a34a44; border-radius: 4px; font-size: .7rem; font-family: 'Courier New', monospace; }
+
+  .a-main { display: flex; flex-direction: column; overflow: hidden; }
+  .a-topbar { background: #080e1a; border-bottom: 1px solid #1a2540; padding: 8px 20px; display: flex; align-items: center; gap: 20px; font-size: .75rem; }
+  .a-badge { padding: 2px 10px; border-radius: 3px; font-size: .7rem; font-family: 'Courier New', monospace; }
+  .a-badge.open { background: #16a34a22; color: #4ade80; border: 1px solid #16a34a44; }
+  .a-badge.warn { background: #ca8a0422; color: #fbbf24; border: 1px solid #ca8a0444; }
+  .a-topbar-time { margin-left: auto; color: #475569; }
+
+  .a-metrics-strip { display: grid; grid-template-columns: repeat(6, 1fr); border-bottom: 1px solid #1a2540; }
+  .a-metric { padding: 10px 14px; border-right: 1px solid #1a2540; }
+  .a-metric:last-child { border-right: none; }
+  .a-metric-label { font-size: .62rem; color: #475569; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 3px; }
+  .a-metric-val { font-size: 1.05rem; font-weight: 700; letter-spacing: .02em; }
+  .a-metric-sub { font-size: .65rem; color: #475569; margin-top: 2px; }
+
+  .a-body { display: grid; grid-template-columns: 1fr 280px; flex: 1; gap: 0; overflow: hidden; }
+  .a-positions { overflow: auto; }
+  .a-pos-header { padding: 8px 14px; background: #0b1220; border-bottom: 1px solid #1a2540; display: flex; align-items: center; gap: 10px; font-size: .7rem; color: #475569; text-transform: uppercase; letter-spacing: .08em; }
+  .a-pos-header span:first-child { color: #60a5fa; }
+  .a-pos-row { display: grid; grid-template-columns: 90px 80px 70px 80px 70px 70px 1fr; align-items: center; padding: 7px 14px; border-bottom: 1px solid #111d2e; font-size: .78rem; cursor: pointer; }
+  .a-pos-row:hover { background: #0f1a2e; }
+  .a-pos-row.header { color: #475569; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; padding-top: 10px; cursor: default; }
+  .a-pos-row.header:hover { background: transparent; }
+  .a-pos-strategy { display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: .68rem; font-family: system-ui; }
+  .a-pos-strategy.ss { background: #7c3aed22; color: #a78bfa; border: 1px solid #7c3aed44; }
+  .a-pos-strategy.ic { background: #0369a122; color: #38bdf8; border: 1px solid #0369a144; }
+  .a-pos-strategy.dc { background: #b4530922; color: #fb923c; border: 1px solid #b4530944; }
+  .a-legs { grid-column: 1/-1; padding: 6px 14px 10px 24px; background: #060c17; border-bottom: 1px solid #111d2e; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .a-leg { font-size: .68rem; padding: 3px 8px; background: #0b1220; border-radius: 3px; display: flex; gap: 6px; }
+  .a-leg .sell { color: #f87171; }
+  .a-leg .buy { color: #4ade80; }
+
+  .a-right-panel { border-left: 1px solid #1a2540; display: flex; flex-direction: column; background: #0b1220; }
+  .a-panel-tab { padding: 8px 14px; border-bottom: 1px solid #1a2540; font-size: .68rem; color: #475569; text-transform: uppercase; letter-spacing: .08em; display: flex; gap: 12px; }
+  .a-panel-tab span.active { color: #60a5fa; border-bottom: 2px solid #2563eb; padding-bottom: 2px; }
+  .a-greeks-grid { padding: 12px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #1a2540; border-bottom: 1px solid #1a2540; }
+  .a-greek { background: #0b1220; padding: 8px 10px; }
+  .a-greek-name { font-size: .62rem; color: #475569; }
+  .a-greek-val { font-size: 1rem; font-weight: 700; margin-top: 2px; }
+  .a-signal-box { padding: 12px 14px; border-bottom: 1px solid #1a2540; }
+  .a-signal-title { font-size: .65rem; color: #475569; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+  .a-vix-bar-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: .72rem; }
+  .a-vix-bar { flex: 1; height: 6px; background: #1a2540; border-radius: 2px; overflow: hidden; }
+  .a-vix-fill { height: 100%; background: linear-gradient(90deg, #16a34a, #fbbf24); border-radius: 2px; }
+  .a-regime { font-size: .68rem; padding: 3px 10px; background: #7c3aed22; color: #a78bfa; border: 1px solid #7c3aed44; border-radius: 3px; text-align: center; margin-bottom: 8px; }
+  .a-start-btn { width: 100%; padding: 8px; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: .78rem; font-weight: 700; font-family: system-ui; letter-spacing: .05em; }
+  .a-alerts { flex: 1; overflow: auto; }
+  .a-alert { padding: 8px 14px; border-bottom: 1px solid #111d2e; font-size: .72rem; display: flex; gap: 8px; align-items: flex-start; }
+  .a-alert-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+  .a-alert-dot.warn { background: #fbbf24; }
+  .a-alert-dot.crit { background: #f87171; }
+
+  /* ═══════════════════════════════════════════
+     VARIANT B — Analytics Dashboard (Light)
+  ═══════════════════════════════════════════ */
+  .b-root { background: #f0f4f8; min-height: 700px; display: flex; flex-direction: column; font-family: system-ui, sans-serif; font-size: .88rem; color: #1e293b; }
+  .b-topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 28px; display: flex; align-items: center; gap: 20px; height: 56px; }
+  .b-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: .95rem; color: #0f172a; }
+  .b-logo-icon { width: 30px; height: 30px; background: linear-gradient(135deg,#2563eb,#7c3aed); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 15px; font-weight: 900; }
+  .b-nav-link { color: #64748b; padding: 4px 2px; font-size: .85rem; border-bottom: 2px solid transparent; cursor: pointer; }
+  .b-nav-link.active { color: #2563eb; border-bottom-color: #2563eb; }
+  .b-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .b-market-pill { display: flex; align-items: center; gap: 5px; padding: 4px 12px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 99px; font-size: .78rem; color: #16a34a; font-weight: 600; }
+  .b-market-dot { width: 7px; height: 7px; border-radius: 50%; background: #16a34a; animation: pulse-green 2s infinite; }
+  @keyframes pulse-green { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+  .b-kill-btn { padding: 5px 14px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; color: #15803d; font-weight: 700; font-size: .78rem; cursor: pointer; }
+  .b-avatar { width: 32px; height: 32px; background: #e0e7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #4f46e5; font-weight: 700; font-size: .85rem; }
+
+  .b-body { flex: 1; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+
+  .b-stat-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .b-stat { background: #fff; border-radius: 14px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(15,23,42,.06); border: 1px solid #e8edf3; }
+  .b-stat-label { font-size: .75rem; color: #64748b; font-weight: 500; margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+  .b-stat-icon { font-size: .85rem; }
+  .b-stat-val { font-size: 1.5rem; font-weight: 800; color: #0f172a; line-height: 1; margin-bottom: 4px; }
+  .b-stat-sub { font-size: .75rem; color: #64748b; }
+  .b-stat-sub.up { color: #16a34a; }
+  .b-stat-sub.dn { color: #dc2626; }
+  .b-stat.highlight { background: linear-gradient(135deg,#2563eb,#4f46e5); border-color: transparent; }
+  .b-stat.highlight .b-stat-label, .b-stat.highlight .b-stat-val, .b-stat.highlight .b-stat-sub { color: #fff; }
+  .b-stat.highlight .b-stat-sub { color: #bfdbfe; }
+
+  .b-mid-row { display: grid; grid-template-columns: 1fr 1fr 340px; gap: 14px; }
+  .b-card { background: #fff; border-radius: 14px; padding: 20px 22px; box-shadow: 0 1px 3px rgba(15,23,42,.06); border: 1px solid #e8edf3; }
+  .b-card-title { font-size: .85rem; font-weight: 700; color: #0f172a; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+  .b-card-badge { font-size: .72rem; font-weight: 600; padding: 2px 10px; border-radius: 99px; }
+  .b-card-badge.blue { background: #eff6ff; color: #2563eb; }
+  .b-card-badge.green { background: #f0fdf4; color: #16a34a; }
+  .b-card-badge.amber { background: #fffbeb; color: #d97706; }
+
+  .b-greeks-2x2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .b-greek-cell { background: #f8fafc; border-radius: 10px; padding: 12px 14px; border: 1px solid #e2e8f0; }
+  .b-greek-sym { font-size: 1rem; font-weight: 700; color: #64748b; margin-bottom: 4px; }
+  .b-greek-val { font-size: 1.35rem; font-weight: 800; color: #0f172a; }
+  .b-greek-desc { font-size: .7rem; color: #94a3b8; margin-top: 2px; }
+
+  .b-margin-section { }
+  .b-margin-num { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: .8rem; }
+  .b-margin-bar { height: 10px; background: #f1f5f9; border-radius: 99px; overflow: hidden; margin-bottom: 4px; }
+  .b-margin-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg,#2563eb,#7c3aed); }
+  .b-margin-fill.warn { background: linear-gradient(90deg,#f59e0b,#ef4444); }
+  .b-margin-limit { font-size: .72rem; color: #94a3b8; text-align: right; }
+  .b-pnl-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: .82rem; }
+  .b-pnl-row:last-child { border-bottom: none; }
+
+  .b-signal-card { display: flex; flex-direction: column; gap: 12px; }
+  .b-vix-gauge { text-align: center; padding: 10px 0; }
+  .b-vix-num { font-size: 2.2rem; font-weight: 900; color: #7c3aed; line-height: 1; }
+  .b-vix-label { font-size: .72rem; color: #64748b; margin-top: 4px; }
+  .b-regime-pill { display: flex; align-items: center; gap: 8px; background: #f5f3ff; border: 1px solid #c4b5fd; border-radius: 10px; padding: 10px 14px; }
+  .b-regime-icon { font-size: 1.3rem; }
+  .b-regime-name { font-weight: 700; color: #6d28d9; font-size: .88rem; }
+  .b-regime-desc { font-size: .72rem; color: #7c3aed; }
+  .b-start-btn { padding: 14px; background: linear-gradient(135deg,#2563eb,#4f46e5); color: #fff; border: none; border-radius: 10px; font-weight: 700; font-size: .95rem; cursor: pointer; }
+
+  .b-positions-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .b-positions-table th { text-align: left; padding: 8px 14px; font-size: .72rem; color: #94a3b8; font-weight: 600; border-bottom: 1px solid #f1f5f9; }
+  .b-positions-table td { padding: 10px 14px; border-bottom: 1px solid #f8fafc; vertical-align: middle; }
+  .b-positions-table tr:last-child td { border-bottom: none; }
+  .b-pos-chip { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: .72rem; font-weight: 600; }
+  .b-pos-chip.ss { background: #f5f3ff; color: #6d28d9; }
+  .b-pos-chip.ic { background: #eff6ff; color: #2563eb; }
+  .b-pos-chip.dc { background: #fff7ed; color: #c2410c; }
+  .b-pos-status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: .7rem; font-weight: 600; }
+  .b-pos-status.open { background: #f0fdf4; color: #16a34a; }
+  .b-pos-status.adj { background: #fffbeb; color: #d97706; }
+  .b-close-btn { padding: 3px 10px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 5px; font-size: .72rem; cursor: pointer; }
+
+  /* ═══════════════════════════════════════════
+     VARIANT C — Command Center (Dark Pro)
+  ═══════════════════════════════════════════ */
+  .c-root { background: #111827; min-height: 700px; display: grid; grid-template-rows: 48px 1fr; color: #e2e8f0; font-family: system-ui, sans-serif; font-size: .84rem; }
+  .c-topbar { background: #0f172a; border-bottom: 1px solid #1f2937; display: flex; align-items: center; padding: 0 20px; gap: 0; }
+  .c-logo { display: flex; align-items: center; gap: 9px; padding-right: 20px; border-right: 1px solid #1f2937; height: 100%; }
+  .c-logo-mark { width: 26px; height: 26px; background: linear-gradient(135deg,#2563eb,#7c3aed); border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; font-weight: 900; }
+  .c-logo-name { font-weight: 800; font-size: .88rem; color: #f8fafc; }
+  .c-tabs { display: flex; height: 100%; }
+  .c-tab { padding: 0 18px; display: flex; align-items: center; font-size: .8rem; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; height: 100%; }
+  .c-tab.active { color: #60a5fa; border-bottom-color: #2563eb; }
+  .c-top-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .c-mkt-indicator { display: flex; align-items: center; gap: 5px; font-size: .75rem; color: #4ade80; font-weight: 600; }
+  .c-mkt-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 6px #4ade80; }
+  .c-vix-chip { background: #1e293b; padding: 3px 10px; border-radius: 4px; font-size: .75rem; color: #a78bfa; font-weight: 700; }
+  .c-kill-toggle { padding: 4px 12px; background: #15803d22; border: 1px solid #16a34a55; border-radius: 4px; color: #4ade80; font-size: .75rem; font-weight: 700; cursor: pointer; }
+  .c-kill-toggle.on { background: #dc262622; border-color: #dc262655; color: #f87171; }
+
+  .c-workspace { display: grid; grid-template-columns: 260px 1fr 280px; overflow: hidden; }
+
+  /* Left panel */
+  .c-left { background: #0f172a; border-right: 1px solid #1f2937; display: flex; flex-direction: column; overflow: hidden; }
+  .c-section-head { padding: 10px 16px; font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: #475569; border-bottom: 1px solid #1f2937; display: flex; align-items: center; justify-content: space-between; }
+  .c-section-head span.action { color: #60a5fa; cursor: pointer; font-size: .72rem; text-transform: none; letter-spacing: 0; }
+
+  .c-fund-summary { padding: 14px 16px; border-bottom: 1px solid #1f2937; }
+  .c-fund-name { font-weight: 700; font-size: .9rem; color: #f8fafc; margin-bottom: 10px; }
+  .c-fund-stat { display: flex; justify-content: space-between; font-size: .78rem; padding: 3px 0; }
+  .c-fund-stat .lbl { color: #64748b; }
+  .c-fund-stat .val { font-weight: 600; }
+
+  .c-margin-viz { padding: 12px 16px; border-bottom: 1px solid #1f2937; }
+  .c-margin-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; font-size: .78rem; }
+  .c-margin-pct { font-size: 1.3rem; font-weight: 800; color: #60a5fa; }
+  .c-margin-track { height: 8px; background: #1f2937; border-radius: 99px; overflow: hidden; margin-bottom: 4px; position: relative; }
+  .c-margin-track::after { content: ''; position: absolute; right: 30%; top: 0; bottom: 0; width: 1px; background: #f59e0b44; }
+  .c-margin-fill2 { height: 100%; border-radius: 99px; }
+  .c-risk-limits { padding: 8px 16px; border-bottom: 1px solid #1f2937; }
+  .c-limit-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: .75rem; }
+  .c-limit-bar { width: 60px; height: 4px; background: #1f2937; border-radius: 99px; overflow: hidden; }
+  .c-limit-fill { height: 100%; border-radius: 99px; }
+  .c-limit-val { font-size: .72rem; font-weight: 600; text-align: right; min-width: 40px; }
+
+  .c-greek-panel { padding: 12px 16px; border-bottom: 1px solid #1f2937; }
+  .c-greek-row { display: grid; grid-template-columns: 30px 1fr 60px; align-items: center; padding: 4px 0; gap: 8px; font-size: .78rem; }
+  .c-greek-sym2 { font-weight: 800; font-size: .9rem; color: #94a3b8; }
+  .c-greek-sparkline { height: 20px; }
+  .c-greek-sparkline line { stroke: #334155; stroke-width: 1; }
+  .c-greek-sparkline polyline { fill: none; stroke-width: 1.5; }
+
+  .c-signal-panel { padding: 12px 16px; flex: 1; }
+  .c-start-btn2 { width: 100%; padding: 10px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: .82rem; letter-spacing: .04em; margin-bottom: 10px; }
+  .c-regime-info { background: #1f2937; border-radius: 8px; padding: 10px 12px; }
+  .c-regime-row { display: flex; justify-content: space-between; font-size: .75rem; padding: 2px 0; }
+  .c-regime-row .key { color: #64748b; }
+  .c-regime-row .val2 { font-weight: 600; color: #a78bfa; }
+
+  /* Center panel */
+  .c-center { display: flex; flex-direction: column; overflow: hidden; }
+  .c-pos-toolbar { padding: 8px 16px; border-bottom: 1px solid #1f2937; display: flex; align-items: center; gap: 10px; background: #0f172a; }
+  .c-filter-btn { padding: 3px 12px; border-radius: 4px; border: 1px solid #1f2937; background: transparent; color: #64748b; font-size: .75rem; cursor: pointer; }
+  .c-filter-btn.active { background: #1e3a5f; border-color: #2563eb; color: #60a5fa; }
+  .c-positions-scroll { flex: 1; overflow: auto; }
+  .c-pos-card { margin: 10px 12px; border: 1px solid #1f2937; border-radius: 10px; overflow: hidden; background: #0f172a; }
+  .c-pos-card-head { padding: 10px 14px; display: grid; grid-template-columns: auto auto 1fr auto auto; align-items: center; gap: 10px; cursor: pointer; }
+  .c-strategy-badge { padding: 2px 9px; border-radius: 4px; font-size: .72rem; font-weight: 700; }
+  .c-strategy-badge.ss { background: #4c1d9522; color: #c4b5fd; border: 1px solid #4c1d9544; }
+  .c-strategy-badge.ic { background: #1e3a5f; color: #60a5fa; border: 1px solid #1e40af55; }
+  .c-status-badge { padding: 2px 8px; border-radius: 4px; font-size: .7rem; font-weight: 600; }
+  .c-status-badge.open { background: #14532d22; color: #4ade80; border: 1px solid #16a34a44; }
+  .c-status-badge.adj { background: #78350f22; color: #fbbf24; border: 1px solid #b4530944; }
+  .c-pos-expiry { color: #64748b; font-size: .75rem; }
+  .c-pos-credit { font-size: .85rem; font-weight: 700; color: #4ade80; margin-left: auto; }
+  .c-pos-pnl { font-size: .85rem; font-weight: 700; }
+  .c-pos-legs { padding: 0 14px 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .c-leg-card { background: #111827; border: 1px solid #1f2937; border-radius: 6px; padding: 6px 10px; font-size: .72rem; }
+  .c-leg-header { display: flex; justify-content: space-between; margin-bottom: 2px; }
+  .c-leg-sym { font-weight: 600; color: #94a3b8; }
+  .c-leg-side-sell { color: #f87171; font-weight: 700; }
+  .c-leg-side-buy { color: #4ade80; font-weight: 700; }
+  .c-leg-detail { color: #475569; display: flex; gap: 8px; }
+
+  .c-pos-footer { padding: 8px 14px; background: #080e1a; border-top: 1px solid #1f2937; display: flex; justify-content: space-between; align-items: center; font-size: .72rem; color: #475569; }
+  .c-action-btn { padding: 3px 10px; border-radius: 4px; border: 1px solid; font-size: .72rem; cursor: pointer; background: transparent; }
+  .c-action-btn.close { border-color: #dc262644; color: #f87171; }
+  .c-action-btn.gtt { border-color: #16a34a44; color: #4ade80; }
+
+  /* Right panel */
+  .c-right { background: #0f172a; border-left: 1px solid #1f2937; display: flex; flex-direction: column; overflow: hidden; }
+  .c-audit-feed { flex: 1; overflow: auto; padding: 8px 0; }
+  .c-audit-row { padding: 8px 16px; border-bottom: 1px solid #0d1117; display: flex; gap: 10px; align-items: flex-start; }
+  .c-audit-time { font-size: .65rem; color: #475569; flex-shrink: 0; font-family: 'Courier New', monospace; }
+  .c-audit-content { font-size: .75rem; }
+  .c-audit-actor { font-weight: 700; color: #60a5fa; font-size: .7rem; }
+  .c-audit-action { color: #94a3b8; }
+  .c-audit-detail { color: #475569; font-size: .7rem; margin-top: 1px; }
+  .c-audit-badge2 { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: .65rem; font-weight: 600; }
+  .c-audit-badge2.sys { background: #1e3a5f; color: #60a5fa; }
+  .c-audit-badge2.op { background: #14532d22; color: #4ade80; }
+  .c-audit-badge2.risk { background: #7f1d1d22; color: #f87171; }
+
+  .c-pnl-section { border-top: 1px solid #1f2937; padding: 12px 16px; }
+  .c-pnl-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: #475569; margin-bottom: 8px; }
+  .c-pnl-big { font-size: 1.6rem; font-weight: 900; margin-bottom: 2px; }
+  .c-pnl-sub2 { font-size: .72rem; color: #64748b; }
+  .c-pnl-breakdown { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .c-pnl-item { display: flex; justify-content: space-between; font-size: .75rem; padding: 3px 0; border-bottom: 1px solid #1f2937; }
+  .c-pnl-item:last-child { border-bottom: none; }
+  .c-pnl-item .k { color: #64748b; }
+  .c-pnl-item .v { font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="picker-header">
+  <h1>🎨 UI Mocks — ThetaDesk Dashboard</h1>
+  <p>Review the 3 variants, then tell Claude which to implement.</p>
+</div>
+<nav class="variant-nav">
+  <button class="active" onclick="showVariant('a', this)">A · Terminal Dark</button>
+  <button onclick="showVariant('b', this)">B · Analytics Light</button>
+  <button onclick="showVariant('c', this)">C · Command Center</button>
+</nav>
+
+<!-- ═══════ VARIANT A ═══════ -->
+<div id="panel-a" class="variant-panel active">
+  <div class="variant-label">Variant A</div>
+  <div class="variant-title">Terminal Dark — Power-User Dense</div>
+  <div class="rationale">Full dark trading-terminal aesthetic with monospace numbers, a persistent sidebar for navigation and signal engine controls, and a tight data-dense layout. Every pixel carries information — built for an operator who knows the system.</div>
+  <div class="mock-frame">
+    <div class="a-root">
+      <!-- Sidebar -->
+      <aside class="a-sidebar">
+        <div class="a-logo">
+          <div class="a-logo-icon">Θ</div>
+          <span class="a-logo-text">ThetaDesk</span>
+        </div>
+        <div class="a-nav-section">
+          <div class="a-nav-label">Monitor</div>
+          <div class="a-nav-item active"><div class="a-nav-dot"></div> Cockpit</div>
+          <div class="a-nav-item"><div class="a-nav-dot"></div> Positions</div>
+          <div class="a-nav-item"><div class="a-nav-dot"></div> Orders</div>
+        </div>
+        <div class="a-nav-section">
+          <div class="a-nav-label">Analysis</div>
+          <div class="a-nav-item"><div class="a-nav-dot"></div> Greeks</div>
+          <div class="a-nav-item"><div class="a-nav-dot"></div> P&amp;L</div>
+          <div class="a-nav-item"><div class="a-nav-dot"></div> Risk Limits</div>
+        </div>
+        <div class="a-nav-section">
+          <div class="a-nav-label">System</div>
+          <div class="a-nav-item"><div class="a-nav-dot"></div> Audit Log</div>
+          <div class="a-nav-item"><div class="a-nav-dot"></div> Alerts</div>
+          <div class="a-nav-item"><div class="a-nav-dot"></div> Settings</div>
+        </div>
+        <div class="a-sidebar-footer">
+          Kill-switch: <span class="a-kill-badge">OFF</span><br>
+          <span style="display:block;margin-top:6px;color:#334155">NIFTY 24,312 ↑ 0.43%</span>
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <div class="a-main">
+        <!-- Top status bar -->
+        <div class="a-topbar">
+          <span class="a-badge open">● MARKET OPEN</span>
+          <span class="a-badge warn">⚑ 1 ALERT</span>
+          <span style="color:#475569">|</span>
+          <span>VIX <b style="color:#a78bfa">14.2</b></span>
+          <span>Regime <b style="color:#a78bfa">MidStrangle</b></span>
+          <span>IV-Rank <b style="color:#60a5fa">62%</b></span>
+          <span class="a-topbar-time">IST 10:47:33</span>
+        </div>
+
+        <!-- Metrics strip -->
+        <div class="a-metrics-strip">
+          <div class="a-metric">
+            <div class="a-metric-label">NAV</div>
+            <div class="a-metric-val" style="color:#e2e8f0">₹8,72,400</div>
+            <div class="a-metric-sub">Start ₹8,50,000</div>
+          </div>
+          <div class="a-metric">
+            <div class="a-metric-label">Unrealised P&amp;L</div>
+            <div class="a-metric-val" style="color:#4ade80">+₹4,820</div>
+            <div class="a-metric-sub">3 positions</div>
+          </div>
+          <div class="a-metric">
+            <div class="a-metric-label">Margin Used</div>
+            <div class="a-metric-val" style="color:#60a5fa">48.3%</div>
+            <div class="a-metric-sub">Cap 70%</div>
+          </div>
+          <div class="a-metric">
+            <div class="a-metric-label">MTD Return</div>
+            <div class="a-metric-val" style="color:#4ade80">+2.64%</div>
+            <div class="a-metric-sub">Target 3%</div>
+          </div>
+          <div class="a-metric">
+            <div class="a-metric-label">Drawdown</div>
+            <div class="a-metric-val" style="color:#fbbf24">-1.2%</div>
+            <div class="a-metric-sub">Stop 6%</div>
+          </div>
+          <div class="a-metric">
+            <div class="a-metric-label">Net Θ / day</div>
+            <div class="a-metric-val" style="color:#4ade80">+₹1,240</div>
+            <div class="a-metric-sub">Δ -0.04  Γ -0.8</div>
+          </div>
+        </div>
+
+        <!-- Body grid -->
+        <div class="a-body">
+          <!-- Positions table -->
+          <div class="a-positions">
+            <div class="a-pos-header">
+              <span>POSITIONS</span>
+              <span>3 open · GTT active on 1</span>
+            </div>
+            <div class="a-pos-row header">
+              <span>Strategy</span><span>Expiry</span><span>DTE</span><span>Credit</span><span>P&amp;L</span><span>MaxLoss</span><span>Status</span>
+            </div>
+            <!-- Position 1 -->
+            <div class="a-pos-row" onclick="toggleLegs('a1')">
+              <span><span class="a-pos-strategy ss">S.Strangle</span></span>
+              <span>26Jun25</span>
+              <span style="color:#fbbf24">28d</span>
+              <span style="color:#4ade80">₹9,620</span>
+              <span style="color:#4ade80">+₹3,100</span>
+              <span>₹17,000</span>
+              <span><span style="color:#4ade80">● Open</span></span>
+            </div>
+            <div class="a-legs" id="legs-a1" style="display:none">
+              <div class="a-leg"><span class="sell">SELL</span> NIFTY 23900 PE · Δ-0.12 · ₹48</div>
+              <div class="a-leg"><span class="sell">SELL</span> NIFTY 24700 CE · Δ0.14 · ₹62</div>
+            </div>
+            <!-- Position 2 -->
+            <div class="a-pos-row" onclick="toggleLegs('a2')">
+              <span><span class="a-pos-strategy ic">Iron Condor</span></span>
+              <span>31Jul25</span>
+              <span style="color:#4ade80">55d</span>
+              <span style="color:#4ade80">₹6,240</span>
+              <span style="color:#4ade80">+₹1,720</span>
+              <span>₹14,200</span>
+              <span><span style="color:#fbbf24">⟳ Adjusting</span></span>
+            </div>
+            <div class="a-legs" id="legs-a2" style="display:none">
+              <div class="a-leg"><span class="sell">SELL</span> NIFTY 23800 PE · Δ-0.16 · ₹72</div>
+              <div class="a-leg"><span class="sell">SELL</span> NIFTY 24800 CE · Δ0.16 · ₹68</div>
+              <div class="a-leg"><span class="buy">BUY</span> NIFTY 23600 PE · Δ-0.07 · ₹28</div>
+              <div class="a-leg"><span class="buy">BUY</span> NIFTY 25000 CE · Δ0.05 · ₹24</div>
+            </div>
+            <!-- Position 3 -->
+            <div class="a-pos-row" onclick="toggleLegs('a3')">
+              <span><span class="a-pos-strategy dc">Dbl Calendar</span></span>
+              <span>27Mar25</span>
+              <span style="color:#f87171">12d</span>
+              <span style="color:#e2e8f0">-₹3,800</span>
+              <span style="color:#f87171">-₹620</span>
+              <span>₹5,200</span>
+              <span><span style="color:#f87171">⚠ ProfitTake</span></span>
+            </div>
+            <div class="a-legs" id="legs-a3" style="display:none">
+              <div class="a-leg"><span class="sell">SELL</span> NIFTY 24200 PE Mar · Δ-0.50 · ₹82</div>
+              <div class="a-leg"><span class="sell">SELL</span> NIFTY 24200 CE Mar · Δ0.50 · ₹79</div>
+              <div class="a-leg"><span class="buy">BUY</span> NIFTY 24200 PE Apr · Δ-0.52 · ₹134</div>
+              <div class="a-leg"><span class="buy">BUY</span> NIFTY 24200 CE Apr · Δ0.51 · ₹131</div>
+            </div>
+            <div style="padding:8px 14px;color:#475569;font-size:.72rem;border-top:1px solid #111d2e;">
+              ▶ Click row to expand legs &nbsp;|&nbsp; All times IST
+            </div>
+          </div>
+
+          <!-- Right panel -->
+          <div class="a-right-panel">
+            <div class="a-panel-tab">
+              <span class="active">Greeks</span>
+              <span>Signal</span>
+              <span>Alerts</span>
+            </div>
+            <div class="a-greeks-grid">
+              <div class="a-greek"><div class="a-greek-name">Delta (Δ)</div><div class="a-greek-val" style="color:#fbbf24">-0.04</div></div>
+              <div class="a-greek"><div class="a-greek-name">Gamma (Γ)</div><div class="a-greek-val" style="color:#f87171">-0.82</div></div>
+              <div class="a-greek"><div class="a-greek-name">Theta (Θ)</div><div class="a-greek-val" style="color:#4ade80">+1,240</div></div>
+              <div class="a-greek"><div class="a-greek-name">Vega (ν)</div><div class="a-greek-val" style="color:#60a5fa">-2,840</div></div>
+            </div>
+            <div class="a-signal-box">
+              <div class="a-signal-title">Signal Engine</div>
+              <div class="a-vix-bar-wrap">
+                <span style="color:#475569">VIX</span>
+                <div class="a-vix-bar"><div class="a-vix-fill" style="width:52%"></div></div>
+                <b style="color:#a78bfa">14.2</b>
+              </div>
+              <div class="a-regime">MID · Short Strangle</div>
+              <button class="a-start-btn">▶ GENERATE PROPOSAL</button>
+            </div>
+            <div class="a-alerts">
+              <div style="padding:6px 14px;font-size:.65rem;color:#475569;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid #111d2e">Recent Alerts</div>
+              <div class="a-alert">
+                <div class="a-alert-dot crit"></div>
+                <div><div style="color:#f87171;font-weight:600">RiskStop approaching</div><div style="color:#475569">IC Jul position Δ now 0.29 (limit 0.30)</div><div style="color:#334155;font-size:.65rem">10:44 IST</div></div>
+              </div>
+              <div class="a-alert">
+                <div class="a-alert-dot warn"></div>
+                <div><div style="color:#fbbf24;font-weight:600">DTE Alert</div><div style="color:#475569">Dbl Cal Mar — 12 DTE, consider rolling</div><div style="color:#334155;font-size:.65rem">09:30 IST</div></div>
+              </div>
+              <div class="a-alert">
+                <div class="a-alert-dot warn"></div>
+                <div><div style="color:#fbbf24;font-weight:600">Margin rising</div><div style="color:#475569">Util 48% → 52% over last 30 min</div><div style="color:#334155;font-size:.65rem">09:15 IST</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="choose-btn" onclick="choose('A')">Choose Variant A →</button>
+  <div class="chosen-banner" id="chosen-a">✓ Chosen A — tell Claude "implement variant A".</div>
+</div>
+
+<!-- ═══════ VARIANT B ═══════ -->
+<div id="panel-b" class="variant-panel">
+  <div class="variant-label">Variant B</div>
+  <div class="variant-title">Analytics Light — Visual &amp; Scannable</div>
+  <div class="rationale">A bright, card-based layout with color-coded stat tiles and clear hierarchy — trades legibility for density. The signal engine and VIX regime are front-and-center, and position tables use chip-style badges that are faster to scan at a glance.</div>
+  <div class="mock-frame">
+    <div class="b-root">
+      <!-- Topbar -->
+      <div class="b-topbar">
+        <div class="b-logo">
+          <div class="b-logo-icon">Θ</div>
+          ThetaDesk
+        </div>
+        <span style="width:1px;height:22px;background:#e2e8f0;margin:0 6px"></span>
+        <span class="b-nav-link active">Cockpit</span>
+        <span class="b-nav-link">Positions</span>
+        <span class="b-nav-link">Risk</span>
+        <span class="b-nav-link">Audit</span>
+        <div class="b-topbar-right">
+          <div class="b-market-pill"><div class="b-market-dot"></div> Market Open · 10:47 IST</div>
+          <button class="b-kill-btn">Kill: OFF</button>
+          <div class="b-avatar">T</div>
+        </div>
+      </div>
+
+      <div class="b-body">
+        <!-- Stat tiles -->
+        <div class="b-stat-row">
+          <div class="b-stat highlight">
+            <div class="b-stat-label"><span class="b-stat-icon">₹</span> Portfolio NAV</div>
+            <div class="b-stat-val">₹8,72,400</div>
+            <div class="b-stat-sub up">↑ ₹22,400 since start</div>
+          </div>
+          <div class="b-stat">
+            <div class="b-stat-label"><span class="b-stat-icon">📈</span> Today's P&amp;L</div>
+            <div class="b-stat-val" style="color:#16a34a">+₹4,820</div>
+            <div class="b-stat-sub up">↑ 0.55% of NAV</div>
+          </div>
+          <div class="b-stat">
+            <div class="b-stat-label"><span class="b-stat-icon">📅</span> MTD Return</div>
+            <div class="b-stat-val" style="color:#16a34a">+2.64%</div>
+            <div class="b-stat-sub" style="color:#64748b">Target 3.0% · 16d left</div>
+          </div>
+          <div class="b-stat">
+            <div class="b-stat-label"><span class="b-stat-icon">⚡</span> Drawdown</div>
+            <div class="b-stat-val" style="color:#d97706">-1.2%</div>
+            <div class="b-stat-sub" style="color:#64748b">Stop at -6.0%</div>
+          </div>
+          <div class="b-stat">
+            <div class="b-stat-label"><span class="b-stat-icon">🔒</span> Open Positions</div>
+            <div class="b-stat-val">3</div>
+            <div class="b-stat-sub up">1 adjusting</div>
+          </div>
+        </div>
+
+        <!-- Mid row -->
+        <div class="b-mid-row">
+          <!-- Greeks card -->
+          <div class="b-card">
+            <div class="b-card-title">Portfolio Greeks <span class="b-card-badge blue">Live</span></div>
+            <div class="b-greeks-2x2">
+              <div class="b-greek-cell">
+                <div class="b-greek-sym">Δ Delta</div>
+                <div class="b-greek-val" style="color:#d97706">-0.04</div>
+                <div class="b-greek-desc">Near-neutral ✓</div>
+              </div>
+              <div class="b-greek-cell">
+                <div class="b-greek-sym">Γ Gamma</div>
+                <div class="b-greek-val" style="color:#dc2626">-0.82</div>
+                <div class="b-greek-desc">Limit: -1.2 ⚠</div>
+              </div>
+              <div class="b-greek-cell">
+                <div class="b-greek-sym">Θ Theta</div>
+                <div class="b-greek-val" style="color:#16a34a">+₹1,240</div>
+                <div class="b-greek-desc">Daily harvest ✓</div>
+              </div>
+              <div class="b-greek-cell">
+                <div class="b-greek-sym">ν Vega</div>
+                <div class="b-greek-val" style="color:#2563eb">-₹2,840</div>
+                <div class="b-greek-desc">Exposure ok</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Margin card -->
+          <div class="b-card">
+            <div class="b-card-title">Capital &amp; Margin <span class="b-card-badge green">48%</span></div>
+            <div style="margin-bottom:16px">
+              <div class="b-margin-num">
+                <span class="m-muted">Used margin</span>
+                <span class="m-bold">₹4,10,560</span>
+              </div>
+              <div class="b-margin-bar"><div class="b-margin-fill" style="width:48%"></div></div>
+              <div class="b-margin-limit">Cap 70% &nbsp;|&nbsp; ₹8,50,000 total</div>
+            </div>
+            <div class="b-pnl-row">
+              <span class="m-muted">Realised P&amp;L (MTD)</span>
+              <span class="m-bold m-green">+₹18,200</span>
+            </div>
+            <div class="b-pnl-row">
+              <span class="m-muted">Unrealised P&amp;L</span>
+              <span class="m-bold m-green">+₹4,820</span>
+            </div>
+            <div class="b-pnl-row">
+              <span class="m-muted">Charges (MTD)</span>
+              <span class="m-bold m-red">-₹3,420</span>
+            </div>
+            <div class="b-pnl-row">
+              <span class="m-muted">Max per-position loss</span>
+              <span class="m-bold">₹17,000</span>
+            </div>
+          </div>
+
+          <!-- Signal card -->
+          <div class="b-card">
+            <div class="b-card-title">Signal Engine <span class="b-card-badge amber">Ready</span></div>
+            <div class="b-signal-card">
+              <div class="b-vix-gauge">
+                <div class="b-vix-num">14.2</div>
+                <div class="b-vix-label">India VIX · Updated 10:47</div>
+              </div>
+              <div class="b-regime-pill">
+                <div class="b-regime-icon">📐</div>
+                <div>
+                  <div class="b-regime-name">MID · Short Strangle</div>
+                  <div class="b-regime-desc">VIX 12–18 → sell premium on both sides</div>
+                </div>
+              </div>
+              <div style="font-size:.75rem;color:#64748b;display:flex;justify-content:space-between">
+                <span>IV-Rank <b style="color:#0f172a">62%</b></span>
+                <span>ATM IV <b style="color:#0f172a">14.8%</b></span>
+                <span>DTE window <b style="color:#0f172a">42–50d</b></span>
+              </div>
+              <button class="b-start-btn">▶ Generate Proposal</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Positions table -->
+        <div class="b-card">
+          <div class="b-card-title">Open Positions <span class="b-card-badge blue">3 active</span></div>
+          <table class="b-positions-table">
+            <thead>
+              <tr>
+                <th>Strategy</th>
+                <th>Expiry</th>
+                <th>DTE</th>
+                <th>Net Credit</th>
+                <th>Unrealised P&amp;L</th>
+                <th>Max Loss</th>
+                <th>Margin</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="b-pos-chip ss">Short Strangle</span></td>
+                <td>26 Jun 25</td>
+                <td style="color:#d97706;font-weight:700">28d</td>
+                <td style="font-weight:700;color:#16a34a">₹9,620</td>
+                <td style="font-weight:700;color:#16a34a">+₹3,100</td>
+                <td>₹17,000</td>
+                <td>₹1,82,000</td>
+                <td><span class="b-pos-status open">Open</span></td>
+                <td><button class="b-close-btn">Close</button></td>
+              </tr>
+              <tr>
+                <td><span class="b-pos-chip ic">Iron Condor</span></td>
+                <td>31 Jul 25</td>
+                <td style="color:#16a34a;font-weight:700">55d</td>
+                <td style="font-weight:700;color:#16a34a">₹6,240</td>
+                <td style="font-weight:700;color:#16a34a">+₹1,720</td>
+                <td>₹14,200</td>
+                <td>₹2,28,560</td>
+                <td><span class="b-pos-status adj">Adjusting</span></td>
+                <td><button class="b-close-btn">Close</button></td>
+              </tr>
+              <tr>
+                <td><span class="b-pos-chip dc">Dbl Calendar</span></td>
+                <td>27 Mar 25</td>
+                <td style="color:#dc2626;font-weight:700">12d</td>
+                <td style="font-weight:700;color:#dc2626">-₹3,800</td>
+                <td style="font-weight:700;color:#dc2626">-₹620</td>
+                <td>₹5,200</td>
+                <td>₹68,000</td>
+                <td><span class="b-pos-status adj">ProfitTaking</span></td>
+                <td><button class="b-close-btn">Close</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="choose-btn" onclick="choose('B')">Choose Variant B →</button>
+  <div class="chosen-banner" id="chosen-b">✓ Chosen B — tell Claude "implement variant B".</div>
+</div>
+
+<!-- ═══════ VARIANT C ═══════ -->
+<div id="panel-c" class="variant-panel">
+  <div class="variant-label">Variant C</div>
+  <div class="variant-title">Command Center — 3-Pane Dark Pro</div>
+  <div class="rationale">A tri-pane layout inspired by professional trading platforms: left sidebar for fund health and signal controls, center for position cards with expandable legs, right for a live audit feed and session P&amp;L summary. Highly structured with a dark theme that reduces eye strain during long trading sessions.</div>
+  <div class="mock-frame">
+    <div class="c-root">
+      <!-- Top bar -->
+      <div class="c-topbar">
+        <div class="c-logo">
+          <div class="c-logo-mark">Θ</div>
+          <span class="c-logo-name">ThetaDesk</span>
+        </div>
+        <div class="c-tabs">
+          <div class="c-tab active">Cockpit</div>
+          <div class="c-tab">Positions</div>
+          <div class="c-tab">Risk</div>
+          <div class="c-tab">Audit</div>
+        </div>
+        <div class="c-top-right">
+          <div class="c-mkt-indicator"><div class="c-mkt-dot"></div> OPEN · 10:47</div>
+          <div class="c-vix-chip">VIX 14.2</div>
+          <button class="c-kill-toggle">KILL: OFF</button>
+        </div>
+      </div>
+
+      <!-- 3-pane workspace -->
+      <div class="c-workspace">
+
+        <!-- LEFT PANEL: Fund + Greeks + Signal -->
+        <div class="c-left">
+          <div class="c-section-head">Fund Health</div>
+
+          <div class="c-fund-summary">
+            <div class="c-fund-name">NIFTY Theta Fund</div>
+            <div class="c-fund-stat"><span class="lbl">NAV</span><span class="val" style="color:#60a5fa">₹8,72,400</span></div>
+            <div class="c-fund-stat"><span class="lbl">Cash balance</span><span class="val">₹4,61,840</span></div>
+            <div class="c-fund-stat"><span class="lbl">MTD return</span><span class="val" style="color:#4ade80">+2.64%</span></div>
+            <div class="c-fund-stat"><span class="lbl">Drawdown</span><span class="val" style="color:#fbbf24">-1.20%</span></div>
+            <div class="c-fund-stat"><span class="lbl">Realised P&amp;L</span><span class="val" style="color:#4ade80">+₹18,200</span></div>
+          </div>
+
+          <div class="c-margin-viz">
+            <div class="c-margin-header">
+              <span style="color:#64748b;font-size:.75rem">Margin Utilisation</span>
+              <span class="c-margin-pct">48.3%</span>
+            </div>
+            <div class="c-margin-track">
+              <div class="c-margin-fill2" style="width:48%;background:linear-gradient(90deg,#2563eb,#4f46e5)"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:.68rem;color:#475569;margin-top:2px">
+              <span>₹4,10,560 used</span><span>Cap 70%</span>
+            </div>
+          </div>
+
+          <div class="c-section-head">Risk Limits<span class="action">Edit →</span></div>
+          <div class="c-risk-limits">
+            <div class="c-limit-row">
+              <span style="color:#94a3b8;font-size:.75rem">Delta exposure</span>
+              <div class="c-limit-bar"><div class="c-limit-fill" style="width:20%;background:#4ade80"></div></div>
+              <span class="c-limit-val" style="color:#4ade80">-0.04</span>
+            </div>
+            <div class="c-limit-row">
+              <span style="color:#94a3b8;font-size:.75rem">Gamma exposure</span>
+              <div class="c-limit-bar"><div class="c-limit-fill" style="width:68%;background:#f87171"></div></div>
+              <span class="c-limit-val" style="color:#f87171">-0.82</span>
+            </div>
+            <div class="c-limit-row">
+              <span style="color:#94a3b8;font-size:.75rem">Margin util %</span>
+              <div class="c-limit-bar"><div class="c-limit-fill" style="width:48%;background:#60a5fa"></div></div>
+              <span class="c-limit-val" style="color:#60a5fa">48%</span>
+            </div>
+            <div class="c-limit-row">
+              <span style="color:#94a3b8;font-size:.75rem">Drawdown</span>
+              <div class="c-limit-bar"><div class="c-limit-fill" style="width:20%;background:#fbbf24"></div></div>
+              <span class="c-limit-val" style="color:#fbbf24">1.2%</span>
+            </div>
+          </div>
+
+          <div class="c-section-head">Greeks (Portfolio)</div>
+          <div class="c-greek-panel">
+            <div class="c-greek-row">
+              <span class="c-greek-sym2">Δ</span>
+              <svg class="c-greek-sparkline" viewBox="0 0 80 20" preserveAspectRatio="none">
+                <polyline points="0,10 15,9 30,11 45,8 60,10 75,9" stroke="#fbbf24"/>
+              </svg>
+              <span style="color:#fbbf24;font-weight:700;text-align:right">-0.04</span>
+            </div>
+            <div class="c-greek-row">
+              <span class="c-greek-sym2">Γ</span>
+              <svg class="c-greek-sparkline" viewBox="0 0 80 20" preserveAspectRatio="none">
+                <polyline points="0,6 15,7 30,9 45,11 60,13 75,15" stroke="#f87171"/>
+              </svg>
+              <span style="color:#f87171;font-weight:700;text-align:right">-0.82</span>
+            </div>
+            <div class="c-greek-row">
+              <span class="c-greek-sym2">Θ</span>
+              <svg class="c-greek-sparkline" viewBox="0 0 80 20" preserveAspectRatio="none">
+                <polyline points="0,12 15,11 30,10 45,9 60,10 75,8" stroke="#4ade80"/>
+              </svg>
+              <span style="color:#4ade80;font-weight:700;text-align:right">+1,240</span>
+            </div>
+            <div class="c-greek-row">
+              <span class="c-greek-sym2">ν</span>
+              <svg class="c-greek-sparkline" viewBox="0 0 80 20" preserveAspectRatio="none">
+                <polyline points="0,8 15,9 30,10 45,10 60,11 75,12" stroke="#60a5fa"/>
+              </svg>
+              <span style="color:#60a5fa;font-weight:700;text-align:right">-2,840</span>
+            </div>
+          </div>
+
+          <div class="c-section-head">Signal Engine</div>
+          <div class="c-signal-panel">
+            <button class="c-start-btn2">▶ Generate Proposal</button>
+            <div class="c-regime-info">
+              <div class="c-regime-row"><span class="key">VIX</span><span class="val2">14.2</span></div>
+              <div class="c-regime-row"><span class="key">Regime</span><span class="val2">MID · Short Strangle</span></div>
+              <div class="c-regime-row"><span class="key">IV-Rank</span><span class="val2">62%</span></div>
+              <div class="c-regime-row"><span class="key">ATM IV</span><span class="val2">14.8%</span></div>
+              <div class="c-regime-row"><span class="key">DTE target</span><span class="val2">42–50d</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CENTER PANEL: Positions -->
+        <div class="c-center">
+          <div class="c-pos-toolbar">
+            <span style="font-size:.75rem;color:#64748b;font-weight:600">POSITIONS</span>
+            <button class="c-filter-btn active">All (3)</button>
+            <button class="c-filter-btn">Open (2)</button>
+            <button class="c-filter-btn">Adjusting (1)</button>
+            <span style="margin-left:auto;font-size:.72rem;color:#475569">Auto-managed · refresh 5s</span>
+          </div>
+
+          <div class="c-positions-scroll">
+            <!-- Position 1: Short Strangle -->
+            <div class="c-pos-card">
+              <div class="c-pos-card-head" onclick="toggleC('c1')">
+                <span class="c-strategy-badge ss">Short Strangle</span>
+                <span class="c-status-badge open">● Open</span>
+                <span class="c-pos-expiry">Exp 26 Jun 25 · 28 DTE</span>
+                <span class="c-pos-credit">Credit ₹9,620</span>
+                <span class="c-pos-pnl" style="color:#4ade80">+₹3,100</span>
+              </div>
+              <div id="legs-c1" class="c-pos-legs" style="display:none">
+                <div class="c-leg-card">
+                  <div class="c-leg-header"><span class="c-leg-sym">NIFTY 23900 PE</span><span class="c-leg-side-sell">SELL</span></div>
+                  <div class="c-leg-detail"><span>Δ -0.12</span><span>Lots 2</span><span>Entry ₹48</span><span>LTP ₹32</span></div>
+                </div>
+                <div class="c-leg-card">
+                  <div class="c-leg-header"><span class="c-leg-sym">NIFTY 24700 CE</span><span class="c-leg-side-sell">SELL</span></div>
+                  <div class="c-leg-detail"><span>Δ 0.14</span><span>Lots 2</span><span>Entry ₹62</span><span>LTP ₹44</span></div>
+                </div>
+              </div>
+              <div class="c-pos-footer">
+                <span>GTT stop @ ₹19,240 &nbsp;·&nbsp; Max loss ₹17,000 &nbsp;·&nbsp; Margin ₹1,82,000</span>
+                <div style="display:flex;gap:6px">
+                  <button class="c-action-btn gtt">GTT Active</button>
+                  <button class="c-action-btn close">Close</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 2: Iron Condor -->
+            <div class="c-pos-card">
+              <div class="c-pos-card-head" onclick="toggleC('c2')">
+                <span class="c-strategy-badge ic">Iron Condor</span>
+                <span class="c-status-badge adj">⟳ Adjusting</span>
+                <span class="c-pos-expiry">Exp 31 Jul 25 · 55 DTE</span>
+                <span class="c-pos-credit">Credit ₹6,240</span>
+                <span class="c-pos-pnl" style="color:#4ade80">+₹1,720</span>
+              </div>
+              <div id="legs-c2" class="c-pos-legs">
+                <div class="c-leg-card">
+                  <div class="c-leg-header"><span class="c-leg-sym">NIFTY 23800 PE</span><span class="c-leg-side-sell">SELL</span></div>
+                  <div class="c-leg-detail"><span>Δ -0.16</span><span>Lots 3</span><span>Entry ₹72</span><span>LTP ₹58</span></div>
+                </div>
+                <div class="c-leg-card">
+                  <div class="c-leg-header"><span class="c-leg-sym">NIFTY 24800 CE</span><span class="c-leg-side-sell">SELL</span></div>
+                  <div class="c-leg-detail"><span>Δ 0.16</span><span>Lots 3</span><span>Entry ₹68</span><span>LTP ₹49</span></div>
+                </div>
+                <div class="c-leg-card">
+                  <div class="c-leg-header"><span class="c-leg-sym">NIFTY 23600 PE</span><span class="c-leg-side-buy">BUY</span></div>
+                  <div class="c-leg-detail"><span>Δ -0.07</span><span>Lots 3</span><span>Entry ₹28</span><span>LTP ₹19</span></div>
+                </div>
+                <div class="c-leg-card">
+                  <div class="c-leg-header"><span class="c-leg-sym">NIFTY 25000 CE</span><span class="c-leg-side-buy">BUY</span></div>
+                  <div class="c-leg-detail"><span>Δ 0.05</span><span>Lots 3</span><span>Entry ₹24</span><span>LTP ₹16</span></div>
+                </div>
+              </div>
+              <div class="c-pos-footer">
+                <span style="color:#fbbf24">⚑ Auto-adjusting: |Δ| 0.29 approaching limit 0.30</span>
+                <div style="display:flex;gap:6px">
+                  <button class="c-action-btn close">Close</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 3: Double Calendar -->
+            <div class="c-pos-card">
+              <div class="c-pos-card-head" onclick="toggleC('c3')">
+                <span class="c-strategy-badge" style="background:#78350f22;color:#fb923c;border:1px solid #78350f44">Dbl Calendar</span>
+                <span class="c-status-badge" style="background:#14532d22;color:#4ade80;border:1px solid #16a34a44">Profit Taking</span>
+                <span class="c-pos-expiry">Exp 27 Mar 25 · 12 DTE ⚠</span>
+                <span class="c-pos-credit" style="color:#f87171">Debit ₹3,800</span>
+                <span class="c-pos-pnl" style="color:#f87171">-₹620</span>
+              </div>
+              <div id="legs-c3" class="c-pos-legs" style="display:none">
+                <div class="c-leg-card">
+                  <div class="c-leg-header"><span class="c-leg-sym">NIFTY 24200 PE Mar</span><span class="c-leg-side-sell">SELL</span></div>
+                  <div class="c-leg-detail"><span>Δ -0.50</span><span>Lots 1</span><span>Entry ₹82</span><span>LTP ₹91</span></div>
+                </div>
+                <div class="c-leg-card">
+                  <div class="c-leg-header"><span class="c-leg-sym">NIFTY 24200 CE Mar</span><span class="c-leg-side-sell">SELL</span></div>
+                  <div class="c-leg-detail"><span>Δ 0.50</span><span>Lots 1</span><span>Entry ₹79</span><span>LTP ₹88</span></div>
+                </div>
+                <div class="c-leg-card">
+                  <div class="c-leg-header"><span class="c-leg-sym">NIFTY 24200 PE Apr</span><span class="c-leg-side-buy">BUY</span></div>
+                  <div class="c-leg-detail"><span>Δ -0.52</span><span>Lots 1</span><span>Entry ₹134</span><span>LTP ₹142</span></div>
+                </div>
+                <div class="c-leg-card">
+                  <div class="c-leg-header"><span class="c-leg-sym">NIFTY 24200 CE Apr</span><span class="c-leg-side-buy">BUY</span></div>
+                  <div class="c-leg-detail"><span>Δ 0.51</span><span>Lots 1</span><span>Entry ₹131</span><span>LTP ₹139</span></div>
+                </div>
+              </div>
+              <div class="c-pos-footer">
+                <span>50% profit target hit · auto-closing tomorrow open</span>
+                <div style="display:flex;gap:6px">
+                  <button class="c-action-btn close">Close Now</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL: Audit feed + P&L -->
+        <div class="c-right">
+          <div class="c-section-head">Live Audit Feed</div>
+          <div class="c-audit-feed">
+            <div class="c-audit-row">
+              <span class="c-audit-time">10:47</span>
+              <div class="c-audit-content">
+                <span class="c-audit-badge2 sys">System</span>
+                <div class="c-audit-action">Greeks snapshot persisted</div>
+                <div class="c-audit-detail">3 positions · Δ-0.04 Γ-0.82 Θ+1240</div>
+              </div>
+            </div>
+            <div class="c-audit-row">
+              <span class="c-audit-time">10:44</span>
+              <div class="c-audit-content">
+                <span class="c-audit-badge2 risk">Risk</span>
+                <div class="c-audit-action">Adjustment triggered</div>
+                <div class="c-audit-detail">IC Jul: |Δ| 0.29 > 0.30 limit</div>
+              </div>
+            </div>
+            <div class="c-audit-row">
+              <span class="c-audit-time">10:30</span>
+              <div class="c-audit-content">
+                <span class="c-audit-badge2 sys">System</span>
+                <div class="c-audit-action">MarketDataWorker refresh</div>
+                <div class="c-audit-detail">NIFTY 24,312 · VIX 14.2</div>
+              </div>
+            </div>
+            <div class="c-audit-row">
+              <span class="c-audit-time">09:30</span>
+              <div class="c-audit-content">
+                <span class="c-audit-badge2 op">Operator</span>
+                <div class="c-audit-action">Session connected</div>
+                <div class="c-audit-detail">Kite token exchanged · valid to 06:00</div>
+              </div>
+            </div>
+            <div class="c-audit-row">
+              <span class="c-audit-time">09:28</span>
+              <div class="c-audit-content">
+                <span class="c-audit-badge2 sys">System</span>
+                <div class="c-audit-action">Auto-migrate completed</div>
+                <div class="c-audit-detail">InitialThetaDesk applied · seeded fund</div>
+              </div>
+            </div>
+            <div class="c-audit-row">
+              <span class="c-audit-time">prev</span>
+              <div class="c-audit-content">
+                <span class="c-audit-badge2 op">Operator</span>
+                <div class="c-audit-action">Proposal approved</div>
+                <div class="c-audit-detail">Short Strangle Jun · ₹9,620 credit</div>
+              </div>
+            </div>
+            <div class="c-audit-row">
+              <span class="c-audit-time">prev</span>
+              <div class="c-audit-content">
+                <span class="c-audit-badge2 risk">Risk</span>
+                <div class="c-audit-action">GTT stop armed</div>
+                <div class="c-audit-detail">SS Jun · trigger ₹19,240 (200% of credit)</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="c-pnl-section">
+            <div class="c-pnl-title">Session P&amp;L</div>
+            <div class="c-pnl-big" style="color:#4ade80">+₹4,820</div>
+            <div class="c-pnl-sub2">Unrealised · +0.55% NAV</div>
+            <div class="c-pnl-breakdown">
+              <div class="c-pnl-item"><span class="k">Short Strangle</span><span class="v" style="color:#4ade80">+₹3,100</span></div>
+              <div class="c-pnl-item"><span class="k">Iron Condor</span><span class="v" style="color:#4ade80">+₹1,720</span></div>
+              <div class="c-pnl-item"><span class="k">Dbl Calendar</span><span class="v" style="color:#f87171">-₹620</span></div>
+              <div class="c-pnl-item"><span class="k">MTD Realised</span><span class="v" style="color:#4ade80">+₹18,200</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="choose-btn" onclick="choose('C')">Choose Variant C →</button>
+  <div class="chosen-banner" id="chosen-c">✓ Chosen C — tell Claude "implement variant C".</div>
+</div>
+
+<script>
+  function showVariant(id, btn) {
+    document.querySelectorAll('.variant-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.variant-nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+  function choose(l) {
+    document.querySelectorAll('.chosen-banner').forEach(b => b.style.display = 'none');
+    const el = document.getElementById('chosen-' + l.toLowerCase());
+    if (el) el.style.display = 'block';
+  }
+  function toggleLegs(id) {
+    const el = document.getElementById('legs-' + id);
+    if (el) el.style.display = el.style.display === 'none' ? 'grid' : 'none';
+  }
+  function toggleC(id) {
+    const el = document.getElementById('legs-' + id);
+    if (el) el.style.display = el.style.display === 'none' ? 'grid' : 'none';
+  }
+</script>
+</body>
+</html>
