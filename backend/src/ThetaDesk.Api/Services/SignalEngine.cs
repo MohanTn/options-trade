@@ -7,7 +7,7 @@ using ThetaDesk.Greeks;
 
 namespace ThetaDesk.Api.Services;
 
-public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ILogger<SignalEngine> logger)
+public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ChainAnalysisService chainAnalysis, ILogger<SignalEngine> logger)
 {
     private const double RiskFreeRate = 0.065;
     private const double AssumedIv = 0.15; // sigma used for delta-based strike selection
@@ -59,6 +59,9 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ILogger<Signa
         var eligible = availableDtes
             .Where(x => x.Dte >= config.EntryDteMin && x.Dte <= config.EntryDteMax)
             .Select(x => x.Expiry).ToList();
+        // Weekly compounding locks the ladder to the nearest eligible expiry so credits roll weekly.
+        if (config.WeeklyCompounding && eligible.Count > 1)
+            eligible = [eligible[0]];
         if (eligible.Count == 0)
         {
             var closest = availableDtes.OrderBy(x => Math.Abs(x.Dte - (config.EntryDteMin + config.EntryDteMax) / 2)).FirstOrDefault();
@@ -82,6 +85,17 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ILogger<Signa
             .ToDictionary(q => q.Token);
         double forward = await EstimateForwardAsync(instByExpiry[eligible[0]], ct);
 
+        // Directional pre-prediction from the chain analysis (served from its short cache when
+        // fresh). If the chain read fails, the scan proceeds unskewed rather than aborting.
+        ChainAnalysis? chain = null;
+        try { chain = await chainAnalysis.AnalyzeAsync(ct: ct); }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Chain analysis unavailable — candidates will not be bias-skewed");
+        }
+        var bias = chain?.BiasScore ?? 0m;
+        var biasLabel = chain?.BiasLabel;
+
         var candidates = new List<TradeProposal>();
         var seen = new HashSet<string>(); // dedupe expiry+strike sets that collapse to the same chain
         string? lastReason = null;
@@ -98,7 +112,7 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ILogger<Signa
             foreach (var scale in DeltaScales)
             {
                 var (proposal, reason) = TryBuildCandidate(fund, config, vix, nearExpiry, farExpiry,
-                    instByExpiry, quoteMap, forward, today, scale);
+                    instByExpiry, quoteMap, forward, today, scale, bias, biasLabel);
                 if (proposal == null) { lastReason = reason; continue; }
 
                 var key = $"{proposal.ExpiryDate:yyyyMMdd}:" + string.Join(',',
@@ -128,7 +142,7 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ILogger<Signa
     private (TradeProposal? Proposal, string? Reason) TryBuildCandidate(
         Fund fund, StrategyConfig config, decimal vix, DateOnly nearExpiry, DateOnly farExpiry,
         Dictionary<DateOnly, List<KiteInstrument>> instByExpiry, Dictionary<long, KiteQuote> quoteMap,
-        double forward, DateOnly today, decimal deltaScale)
+        double forward, DateOnly today, decimal deltaScale, decimal bias, string? biasLabel)
     {
         var nearInsts = instByExpiry[nearExpiry];
         bool needsFar = config.Legs.Any(l => l.Expiry == ExpiryRank.Far);
@@ -142,7 +156,9 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ILogger<Signa
         foreach (var leg in config.Legs)
         {
             var (insts, t) = leg.Expiry == ExpiryRank.Far ? (farInsts, tFar) : (nearInsts, tNear);
-            var wantDelta = leg.Side == Side.Sell ? leg.TargetDelta * deltaScale : leg.TargetDelta;
+            var wantDelta = leg.Side == Side.Sell
+                ? SkewedDelta(leg.TargetDelta * deltaScale, leg.OptionType, bias)
+                : leg.TargetDelta;
             var pick = SelectByDelta(insts, quoteMap, leg.OptionType, wantDelta, forward, t);
             if (pick == null)
                 return (null, $"Could not resolve {leg.Side} {leg.OptionType} ~{wantDelta:F2}Δ for '{config.Name}' "
@@ -159,8 +175,12 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ILogger<Signa
             return (null, $"Single lot max loss ₹{maxLossPerUnit * lotSize:N0} exceeds the ₹{fund.PerPositionMaxLoss:N0} "
                         + $"cap at {deltaScale:P0} of target Δ.");
 
-        // Size within the configured fraction of the per-position loss budget.
+        // Size within the configured fraction of the per-position loss budget. Weekly compounding
+        // scales it with fund growth so realised credits enlarge the next week's size, but the
+        // hard PerPositionMaxLoss cap below always wins.
         decimal budget = fund.PerPositionMaxLoss * config.SizingPct / 100m;
+        if (config.WeeklyCompounding && fund.StartingCapital > 0)
+            budget *= Math.Max(1m, fund.CurrentNav / fund.StartingCapital);
         int lots = Math.Max(1, (int)Math.Floor((double)(budget / (maxLossPerUnit * lotSize))));
         decimal maxLoss = maxLossPerUnit * lots * lotSize;
         while (lots > 1 && maxLoss > fund.PerPositionMaxLoss) { lots--; maxLoss = maxLossPerUnit * lots * lotSize; }
@@ -186,7 +206,9 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ILogger<Signa
                       + $"expiry {nearExpiry:dd-MMM-yy} ({entryDte}d), ATM IV {atmIv * 100:F1}%; "
                       + $"{(netCredit >= 0 ? "credit" : "debit")} ₹{Math.Abs(netCredit):N0}, max loss ₹{maxLoss:N0}"
                       + (config.GttEnabled ? $", GTT stop @ {config.GttPremiumPct:F0}% premium" : "")
-                      + (deltaScale < 1m ? $"; shorts at {deltaScale:P0} of target Δ for a wider, lower-risk strangle" : ""),
+                      + (deltaScale < 1m ? $"; shorts at {deltaScale:P0} of target Δ for a wider, lower-risk strangle" : "")
+                      + (Math.Abs(bias) >= 0.15m && biasLabel != null ? $"; chain bias {biasLabel} ({bias:+0.00;-0.00}) — short strikes skewed to the safer side" : "")
+                      + (config.WeeklyCompounding ? "; weekly compounding — nearest expiry, size scaled with NAV" : ""),
             EntryDte = entryDte,
             TargetExitDte = config.TargetExitDte,
             Lots = lots,
@@ -252,6 +274,16 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ILogger<Signa
         // Naked short credit — bounded by the GTT stop multiple of premium.
         decimal mult = config.GttEnabled ? config.GttPremiumPct / 100m : 2m;
         return (perUnitCredit * mult, false);
+    }
+
+    // Chain-bias strike skew for short legs: a bullish bias (bias > 0) keeps short puts nearer
+    // (higher Δ, richer premium on the defended side) and pushes short calls wider; bearish does
+    // the reverse. Shift is capped at ±30% of the target delta and clamped to a tradable range.
+    private static decimal SkewedDelta(decimal target, OptionType type, decimal bias)
+    {
+        if (bias == 0) return target;
+        decimal shift = 0.30m * bias * (type == OptionType.PE ? 1 : -1);
+        return Math.Clamp(target * (1 + shift), 0.03m, 0.60m);
     }
 
     private static (KiteInstrument Inst, KiteQuote Quote)? SelectByDelta(

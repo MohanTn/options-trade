@@ -124,7 +124,8 @@ public class KiteClient(IConfiguration config, IMemoryCache cache, IConnectionMu
                 (decimal)v.GetProperty("depth").GetProperty("buy")[0].GetProperty("price").GetDouble(),
                 (decimal)v.GetProperty("depth").GetProperty("sell")[0].GetProperty("price").GetDouble(),
                 v.GetProperty("oi").GetInt64(),
-                v.TryGetProperty("iv", out var ivEl) ? (decimal)ivEl.GetDouble() : 0));
+                v.TryGetProperty("iv", out var ivEl) ? (decimal)ivEl.GetDouble() : 0,
+                v.TryGetProperty("volume", out var volEl) ? volEl.GetInt64() : 0));
         }
         return results;
     }

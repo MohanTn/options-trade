@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ThetaDesk.Data;
@@ -11,9 +12,11 @@ using ThetaDesk.Data;
 namespace ThetaDesk.Data.Migrations
 {
     [DbContext(typeof(ThetaDeskDbContext))]
-    partial class ThetaDeskDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260701210655_WeeklyCompounding")]
+    partial class WeeklyCompounding
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -726,30 +729,6 @@ namespace ThetaDesk.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Proposals");
-                });
-
-            modelBuilder.Entity("ThetaDesk.Domain.Entities.VegaFlowDailySnapshot", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("PointsJson")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateOnly>("TradingDate")
-                        .HasColumnType("date");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TradingDate")
-                        .IsUnique();
-
-                    b.ToTable("VegaFlowDailySnapshots");
                 });
 
             modelBuilder.Entity("ThetaDesk.Domain.Entities.VolatilitySnapshot", b =>

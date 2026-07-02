@@ -8,7 +8,7 @@ const STRATEGY_TYPES: Strategy[] = ['ShortStrangle', 'IronCondor', 'DoubleCalend
 
 const BLANK: StrategyConfig = {
   name: 'New Strategy', enabled: true, strategy: 'ShortStrangle',
-  vixMin: 0, vixMax: 100, entryDteMin: 42, entryDteMax: 50, sizingPct: 100,
+  vixMin: 0, vixMax: 100, entryDteMin: 42, entryDteMax: 50, sizingPct: 100, weeklyCompounding: false,
   gttEnabled: false, gttPremiumPct: 200, profitTargetPct: 50, targetExitDte: 21, adjustTriggerDelta: 0.3,
   legs: [{ optionType: 'CE', side: 'Sell', targetDelta: 0.16, expiry: 'Near' }],
 };
@@ -54,6 +54,9 @@ function StrategyCard({ initial, isNew, onSaved }: { initial: StrategyConfig; is
     <Card style={{ opacity: cfg.enabled ? 1 : 0.6 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
         <Input style={{ flex: 1, fontSize: '.85rem', fontWeight: 700 }} value={cfg.name} onChange={e => set('name', e.target.value)} />
+        <label style={checkboxLabel} title="Trade only the nearest eligible expiry and scale size with NAV so weekly credits compound into the principal (per-position max-loss cap still applies)">
+          <input type="checkbox" checked={cfg.weeklyCompounding} onChange={e => set('weeklyCompounding', e.target.checked)} /> Weekly compounding
+        </label>
         <label style={checkboxLabel}>
           <input type="checkbox" checked={cfg.enabled} onChange={e => set('enabled', e.target.checked)} /> Enabled
         </label>

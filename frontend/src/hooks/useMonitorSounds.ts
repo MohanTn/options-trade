@@ -54,17 +54,11 @@ function scheduleTone(
   osc.stop(baseTime + offset + duration + 0.05);
 }
 
-export function useMonitorSounds(
-  positions: Position[] | undefined,
-  alerts: Alert[] | undefined,
-) {
+/** Shared tone-alert player — one AudioContext per mounted consumer, lazily created on first play. */
+export function usePlaySound() {
   const ctxRef = useRef<AudioContext | null>(null);
-  const prevStatusRef = useRef(new Map<string, string>());
-  // Track whether we've seen the first alert batch (suppress sounds on initial load).
-  const alertsInitRef = useRef(false);
-  const prevAlertIdsRef = useRef(new Set<string>());
 
-  const play = useCallback((event: SoundEvent) => {
+  return useCallback((event: SoundEvent) => {
     try {
       if (!ctxRef.current) ctxRef.current = new AudioContext();
       const ctx = ctxRef.current;
@@ -75,6 +69,17 @@ export function useMonitorSounds(
       // AudioContext unavailable or blocked — silently ignore
     }
   }, []);
+}
+
+export function useMonitorSounds(
+  positions: Position[] | undefined,
+  alerts: Alert[] | undefined,
+) {
+  const prevStatusRef = useRef(new Map<string, string>());
+  // Track whether we've seen the first alert batch (suppress sounds on initial load).
+  const alertsInitRef = useRef(false);
+  const prevAlertIdsRef = useRef(new Set<string>());
+  const play = usePlaySound();
 
   // Detect position status transitions and fire the matching sound.
   useEffect(() => {

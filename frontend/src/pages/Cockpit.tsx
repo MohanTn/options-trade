@@ -6,6 +6,8 @@ import ProposalCandidates from '../components/ProposalCandidates';
 import PayoffSimulator from '../components/PayoffSimulator';
 import PositionCard, { POS_COLS } from '../components/PositionCard';
 import StrategySettings from '../components/StrategySettings';
+import ChainAnalysisView from '../components/ChainAnalysisView';
+import VegaLeadView from '../components/VegaLeadView';
 import FundSettings from '../components/FundSettings';
 import { useMonitorSounds } from '../hooks/useMonitorSounds';
 import { color, font, pnlColor, signOf, type Tone } from '../theme';
@@ -50,12 +52,12 @@ type NavItem = { label: string; badge?: string };
 
 const NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
   { label: 'Monitor', items: [{ label: 'Cockpit' }, { label: 'Positions' }, { label: 'Orders' }] },
-  { label: 'Analysis', items: [{ label: 'Greeks' }, { label: 'P&L' }, { label: 'Risk Limits' }] },
+  { label: 'Analysis', items: [{ label: 'Option Chain' }, { label: 'Vega Lead' }, { label: 'Greeks' }, { label: 'P&L' }, { label: 'Risk Limits' }] },
   { label: 'System', items: [{ label: 'Audit Log' }, { label: 'Alerts' }, { label: 'Settings' }] },
 ];
 
 // Views that have real content implemented.
-const IMPLEMENTED = new Set(['Cockpit', 'Positions', 'Orders', 'Greeks', 'P&L', 'Risk Limits', 'Alerts', 'Audit Log', 'Settings']);
+const IMPLEMENTED = new Set(['Cockpit', 'Positions', 'Orders', 'Option Chain', 'Vega Lead', 'Greeks', 'P&L', 'Risk Limits', 'Alerts', 'Audit Log', 'Settings']);
 
 export default function Cockpit() {
   const qc = useQueryClient();
@@ -423,6 +425,20 @@ export default function Cockpit() {
             ) : (
               <div style={{ color: color.textMuted, fontSize: '.82rem' }}>{orderList ? 'No orders yet.' : 'Loading…'}</div>
             )}
+          </div>
+        )}
+
+        {/* ── Option Chain view ── */}
+        {activeView === 'Option Chain' && (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+            <ChainAnalysisView sessionValid={!!session?.valid} />
+          </div>
+        )}
+
+        {/* ── Vega Lead view ── */}
+        {activeView === 'Vega Lead' && (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+            <VegaLeadView sessionValid={!!session?.valid} />
           </div>
         )}
 

@@ -47,6 +47,11 @@ public class StrategyConfig
     public int EntryDteMax { get; set; } = 50;
     public decimal SizingPct { get; set; } = 100m; // % of the per-position max-loss budget to deploy
 
+    // Weekly compounding: candidates lock to the nearest eligible expiry and the sizing budget
+    // scales with CurrentNav/StartingCapital so each week's credits roll into the next week's
+    // size — still hard-capped by Fund.PerPositionMaxLoss.
+    public bool WeeklyCompounding { get; set; }
+
     // GTT protective stop.
     public bool GttEnabled { get; set; }
     public decimal GttPremiumPct { get; set; } = 200m; // trigger at this % of entry premium
@@ -189,6 +194,21 @@ public class NavSnapshot
     public decimal DailyPnl { get; set; }
     public decimal Charges { get; set; }
     public decimal MonthToDatePct { get; set; }
+}
+
+/// <summary>
+/// One trading day's full intraday vega-flow series (CE/PE vega Δ vs morning for the near-week
+/// and near-month expiries, plus NIFTY spot at each sample), archived once at market close from
+/// the day's Redis series. Permanent: nothing here expires or is overwritten automatically — the
+/// operator deletes rows manually when they no longer want them.
+/// </summary>
+public class VegaFlowDailySnapshot
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public DateOnly TradingDate { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    /// <summary>Serialized List&lt;VegaFlowPoint&gt; (ThetaDesk.Api.Services) — the day's full minute-by-minute series.</summary>
+    public string PointsJson { get; set; } = "[]";
 }
 
 public class AuditEntry

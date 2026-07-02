@@ -104,6 +104,7 @@ public class StrategiesController(ThetaDeskDbContext db) : ControllerBase
         config.EntryDteMin = dto.EntryDteMin;
         config.EntryDteMax = dto.EntryDteMax;
         config.SizingPct = dto.SizingPct;
+        config.WeeklyCompounding = dto.WeeklyCompounding;
         config.GttEnabled = dto.GttEnabled;
         config.GttPremiumPct = dto.GttPremiumPct;
         config.ProfitTargetPct = dto.ProfitTargetPct;
@@ -126,7 +127,7 @@ public class StrategiesController(ThetaDeskDbContext db) : ControllerBase
         s.Id, s.Name, s.Enabled,
         strategy = s.Strategy.ToString(),
         s.VixMin, s.VixMax,
-        s.EntryDteMin, s.EntryDteMax, s.SizingPct,
+        s.EntryDteMin, s.EntryDteMax, s.SizingPct, s.WeeklyCompounding,
         s.GttEnabled, s.GttPremiumPct,
         s.ProfitTargetPct, s.TargetExitDte, s.AdjustTriggerDelta,
         legs = s.Legs.Select(l => new
@@ -143,7 +144,7 @@ public record StrategyLegDto(string OptionType, string Side, decimal TargetDelta
 public record StrategyConfigDto(
     string Name, bool Enabled, string Strategy,
     decimal VixMin, decimal VixMax,
-    int EntryDteMin, int EntryDteMax, decimal SizingPct,
+    int EntryDteMin, int EntryDteMax, decimal SizingPct, bool WeeklyCompounding,
     bool GttEnabled, decimal GttPremiumPct,
     decimal ProfitTargetPct, int TargetExitDte, decimal AdjustTriggerDelta,
     List<StrategyLegDto> Legs);
