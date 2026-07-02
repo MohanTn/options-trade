@@ -63,9 +63,40 @@ export interface StrategyConfig {
   id?: string; name: string; enabled: boolean; strategy: Strategy;
   vixMin: number; vixMax: number;
   entryDteMin: number; entryDteMax: number; sizingPct: number;
+  weeklyCompounding: boolean;
   gttEnabled: boolean; gttPremiumPct: number;
   profitTargetPct: number; targetExitDte: number; adjustTriggerDelta: number;
   legs: StrategyLeg[];
+}
+export interface ChainStrikeRow {
+  strike: number;
+  ceOi: number; peOi: number;
+  ceOiChange: number; peOiChange: number;
+  ceVolume: number; peVolume: number;
+  ceLtp: number; peLtp: number;
+  ceIv: number; peIv: number;
+}
+export interface ExpiryAnalysis {
+  expiry: string; dte: number; isMonthly: boolean;
+  atmIv: number; pcrOi: number; pcrVolume: number;
+  maxPain: number; supportStrike: number; resistanceStrike: number;
+  totalCeOi: number; totalPeOi: number;
+  ceOiChange: number; peOiChange: number;
+  skewPct: number;
+  atmStraddle: number; expectedMovePct: number; straddleChangePct: number;
+  supportShift: number; resistanceShift: number;
+  cePremiumSum: number; pePremiumSum: number;
+  cePremiumChangePct: number; pePremiumChangePct: number;
+  ceVegaSum: number; peVegaSum: number;
+  ceVegaChangePct: number; peVegaChangePct: number;
+  strikes: ChainStrikeRow[];
+}
+export interface ChainAnalysis {
+  generatedAtUtc: string; spot: number; vix: number; morningVix: number;
+  nearWeek: ExpiryAnalysis; nearMonth: ExpiryAnalysis;
+  termSpreadPct: number; termStructure: string;
+  biasScore: number; biasLabel: string;
+  drivers: string[]; sellerPlaybook: string;
 }
 
 // --- API helpers ---
@@ -112,6 +143,15 @@ export const portfolio = {
 };
 export const orders = {
   list: (limit = 200) => api.get<Order[]>(`/orders?limit=${limit}`),
+};
+// One intraday sample of per-side Σ-vega change vs morning (percent), sampled ~60s.
+export interface VegaFlowPoint { atUtc: string; weekCe: number; weekPe: number; monthCe: number; monthPe: number; spot: number; }
+export const analysis = {
+  chain: (refresh = false) => api.get<ChainAnalysis>(`/analysis/chain${refresh ? '?refresh=true' : ''}`),
+  vegaFlow: () => api.get<VegaFlowPoint[]>('/analysis/vega-flow'),
+  // Permanent EOD archive (Postgres): one snapshot per trading day, written at market close (15:30 IST).
+  vegaFlowHistoryDates: () => api.get<string[]>('/analysis/vega-flow/history-dates'),
+  vegaFlowHistory: (date: string) => api.get<VegaFlowPoint[]>(`/analysis/vega-flow/history/${date}`),
 };
 export const strategies = {
   list: () => api.get<StrategyConfig[]>('/strategies'),

@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { color, font } from '../theme';
 
 /** Page / view heading. */
-export function ViewTitle({ title }: { title: ReactNode }) {
+export function ViewTitle({ title, style }: { title: ReactNode; style?: CSSProperties }) {
   return (
-    <h2 style={{ margin: '0 0 14px', fontSize: '1.05rem', fontWeight: 700, color: color.text, fontFamily: font.sans }}>
+    <h2 style={{ margin: '0 0 14px', fontSize: '1.05rem', fontWeight: 700, color: color.text, fontFamily: font.sans, ...style }}>
       {title}
     </h2>
   );

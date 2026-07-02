@@ -2,7 +2,7 @@ namespace ThetaDesk.Api.Kite;
 
 public record KiteSessionStatus(bool Valid, string? LoginUrl, DateTime? ExpiresAt);
 public record KiteInstrument(long Token, string Symbol, decimal Strike, DateOnly Expiry, string OptionType, int LotSize);
-public record KiteQuote(long Token, decimal Ltp, decimal Bid, decimal Ask, long Oi, decimal Iv);
+public record KiteQuote(long Token, decimal Ltp, decimal Bid, decimal Ask, long Oi, decimal Iv, long Volume = 0);
 public record KiteMargin(decimal Span, decimal Exposure, decimal Total);
 // AvgFillPrice is set only when the order is known to be filled at placement time
 // (e.g. simulated MARKET fills in paper mode). Live orders fill asynchronously, so it stays null.

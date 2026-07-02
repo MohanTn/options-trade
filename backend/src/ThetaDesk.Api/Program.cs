@@ -68,6 +68,8 @@ else
 }
 builder.Services.AddSingleton<KillSwitchState>();
 builder.Services.AddScoped<SignalEngine>();
+builder.Services.AddScoped<ChainAnalysisService>();
+builder.Services.AddHostedService<ChainAnalysisRefresher>();
 builder.Services.AddScoped<SizingEngine>();
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<BrokerSyncService>();

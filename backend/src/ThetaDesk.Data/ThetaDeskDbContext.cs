@@ -15,6 +15,7 @@ public class ThetaDeskDbContext(DbContextOptions<ThetaDeskDbContext> options) : 
     public DbSet<RiskLimit> RiskLimits => Set<RiskLimit>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<NavSnapshot> NavSnapshots => Set<NavSnapshot>();
+    public DbSet<VegaFlowDailySnapshot> VegaFlowDailySnapshots => Set<VegaFlowDailySnapshot>();
     public DbSet<AuditEntry> AuditLog => Set<AuditEntry>();
     public DbSet<TradeProposal> Proposals => Set<TradeProposal>();
     public DbSet<ProposalLeg> ProposalLegs => Set<ProposalLeg>();
@@ -122,6 +123,12 @@ public class ThetaDeskDbContext(DbContextOptions<ThetaDeskDbContext> options) : 
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.FundId, x.AsOf }).IsUnique();
             e.HasOne(x => x.Fund).WithMany(f => f.NavSnapshots).HasForeignKey(x => x.FundId);
+        });
+
+        b.Entity<VegaFlowDailySnapshot>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.TradingDate).IsUnique();
         });
 
         b.Entity<AuditEntry>(e =>
