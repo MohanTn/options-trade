@@ -48,16 +48,22 @@ function vixRegime(vix: number) {
 const BORDER = `1px solid ${color.border}`;
 
 // Nav item has no `active` field — active state is derived from `activeView` in the parent.
-type NavItem = { label: string; badge?: string };
+// `icon` is a 1-2 char badge shown in place of the label when the sidebar is collapsed.
+type NavItem = { label: string; icon: string };
 
 const NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
-  { label: 'Monitor', items: [{ label: 'Cockpit' }, { label: 'Positions' }, { label: 'Orders' }] },
-  { label: 'Analysis', items: [{ label: 'Option Chain' }, { label: 'Vega Lead' }, { label: 'Greeks' }, { label: 'P&L' }, { label: 'Risk Limits' }] },
-  { label: 'System', items: [{ label: 'Audit Log' }, { label: 'Alerts' }, { label: 'Settings' }] },
+  { label: 'Monitor', items: [{ label: 'Cockpit', icon: 'CP' }, { label: 'Positions', icon: 'PO' }, { label: 'Orders', icon: 'OR' }] },
+  { label: 'Analysis', items: [{ label: 'Option Chain', icon: 'OC' }, { label: 'Vega Lead', icon: 'VL' }, { label: 'Greeks', icon: 'GK' }, { label: 'P&L', icon: 'PL' }, { label: 'Risk Limits', icon: 'RL' }] },
+  { label: 'System', items: [{ label: 'Audit Log', icon: 'AU' }, { label: 'Alerts', icon: 'AT' }, { label: 'Settings', icon: 'ST' }] },
 ];
 
 // Views that have real content implemented.
 const IMPLEMENTED = new Set(['Cockpit', 'Positions', 'Orders', 'Option Chain', 'Vega Lead', 'Greeks', 'P&L', 'Risk Limits', 'Alerts', 'Audit Log', 'Settings']);
+
+const ACTIVE_VIEW_KEY = 'td_activeView';
+const SIDEBAR_COLLAPSED_KEY = 'td_sidebarCollapsed';
+const SIDEBAR_WIDTH = 220;
+const SIDEBAR_WIDTH_COLLAPSED = 60;
 
 export default function Cockpit() {
   const qc = useQueryClient();
@@ -67,7 +73,23 @@ export default function Cockpit() {
   const [simPosition, setSimPosition] = useState<Position | null>(null);
   const [reqToken, setReqToken] = useState('');
   const [rightTab, setRightTab] = useState<'greeks' | 'signal' | 'alerts'>('greeks');
-  const [activeView, setActiveView] = useState('Cockpit');
+  // Restored from the last session so a refresh keeps the operator on the page they were viewing.
+  const [activeView, setActiveViewState] = useState(() => {
+    const saved = localStorage.getItem(ACTIVE_VIEW_KEY);
+    return saved && IMPLEMENTED.has(saved) ? saved : 'Cockpit';
+  });
+  const setActiveView = (label: string) => {
+    setActiveViewState(label);
+    localStorage.setItem(ACTIVE_VIEW_KEY, label);
+  };
+  // Persisted so the operator's collapse preference survives a refresh.
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1');
+  const toggleCollapsed = () => {
+    setCollapsed(c => {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, c ? '0' : '1');
+      return !c;
+    });
+  };
   const clock = useISTClock();
   const mkt = marketStatus();
 
@@ -181,7 +203,8 @@ export default function Cockpit() {
   const navItemStyle = (label: string): React.CSSProperties => {
     const active = activeView === label;
     return {
-      padding: '7px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
+      padding: collapsed ? '7px 0' : '7px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+      justifyContent: collapsed ? 'center' : 'flex-start', gap: 10,
       color: active ? color.accentHover : color.textSub,
       fontWeight: active ? 600 : 500,
       borderLeft: `3px solid ${active ? color.accent : 'transparent'}`,
@@ -195,27 +218,57 @@ export default function Cockpit() {
     ? critAlerts.length.toString()
     : undefined;
 
+  const sidebarWidth = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH;
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', height: '100vh', background: color.appBg, color: color.text, fontFamily: font.sans, fontSize: '.82rem', overflow: 'hidden' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: `${sidebarWidth}px 1fr`, height: '100vh', background: color.appBg, color: color.text, fontFamily: font.sans, fontSize: '.82rem', overflow: 'hidden', transition: 'grid-template-columns .16s ease' }}>
 
       {/* ─── SIDEBAR ─── */}
       <aside style={{ background: color.surface, borderRight: BORDER, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ padding: '16px 18px', borderBottom: BORDER, display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          <div style={{ width: 28, height: 28, background: color.accent, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 800 }}>Θ</div>
-          <span style={{ fontSize: '.9rem', fontWeight: 700, color: color.text, letterSpacing: '.02em' }}>ThetaDesk</span>
+        <div style={{ padding: collapsed ? '16px 0' : '16px 18px', borderBottom: BORDER, display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', gap: 10, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
+            <div style={{ width: 28, height: 28, background: color.accent, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 800, flexShrink: 0 }}>Θ</div>
+            {!collapsed && <span style={{ fontSize: '.9rem', fontWeight: 700, color: color.text, letterSpacing: '.02em', whiteSpace: 'nowrap' }}>ThetaDesk</span>}
+          </div>
+          {!collapsed && (
+            <button
+              title="Collapse sidebar"
+              aria-label="Collapse sidebar"
+              onClick={toggleCollapsed}
+              style={{ background: 'transparent', border: `1px solid ${color.border}`, borderRadius: 6, width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: color.textSub, fontSize: '.7rem', flexShrink: 0 }}
+            >◀</button>
+          )}
         </div>
+        {collapsed && (
+          <button
+            title="Expand sidebar"
+            aria-label="Expand sidebar"
+            onClick={toggleCollapsed}
+            style={{ margin: '8px auto 0', background: 'transparent', border: `1px solid ${color.border}`, borderRadius: 6, width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: color.textSub, fontSize: '.7rem', flexShrink: 0 }}
+          >▶</button>
+        )}
 
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
           {NAV_SECTIONS.map(section => (
             <div key={section.label} style={{ padding: '10px 0', borderBottom: BORDER }}>
-              <div style={{ padding: '4px 18px', fontSize: '.62rem', letterSpacing: '.12em', color: color.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>{section.label}</div>
+              {!collapsed && <div style={{ padding: '4px 18px', fontSize: '.62rem', letterSpacing: '.12em', color: color.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>{section.label}</div>}
               {section.items.map(item => {
                 const badge = navBadge(item.label);
+                const active = activeView === item.label;
                 return (
-                  <div key={item.label} style={navItemStyle(item.label)} onClick={() => setActiveView(item.label)}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0, opacity: 0.7 }} />
-                    {item.label}
-                    {badge && <span style={{ marginLeft: 'auto' }}><Badge tone="neg">{badge}</Badge></span>}
+                  <div key={item.label} style={navItemStyle(item.label)} onClick={() => setActiveView(item.label)} title={collapsed ? `${item.label}${badge ? ` (${badge})` : ''}` : undefined}>
+                    {collapsed ? (
+                      <div style={{ position: 'relative', width: 30, height: 24, borderRadius: 6, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: active ? color.accentBg : 'transparent', color: active ? color.accentHover : color.textSub, fontFamily: font.mono, fontSize: '.62rem', fontWeight: 700, letterSpacing: '.02em' }}>
+                        {item.icon}
+                        {badge && <span style={{ position: 'absolute', top: -3, right: -3, width: 7, height: 7, borderRadius: '50%', background: color.neg }} />}
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0, opacity: 0.7 }} />
+                        {item.label}
+                        {badge && <span style={{ marginLeft: 'auto' }}><Badge tone="neg">{badge}</Badge></span>}
+                      </>
+                    )}
                   </div>
                 );
               })}
@@ -223,18 +276,21 @@ export default function Cockpit() {
           ))}
         </div>
 
-        <div style={{ padding: '12px 18px', borderTop: BORDER, fontSize: '.72rem', color: color.textSub, flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span>Kill-switch:</span>
+        <div style={{ padding: collapsed ? '12px 0' : '12px 18px', borderTop: BORDER, fontSize: '.72rem', color: color.textSub, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: collapsed ? 'center' : 'stretch' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={collapsed ? `Kill-switch: ${killOn ? 'ON' : 'OFF'}` : undefined}>
+            {!collapsed && <span>Kill-switch:</span>}
             <span onClick={() => killMutation.mutate(!killOn)} style={{ cursor: 'pointer' }}>
               <Badge tone={killOn ? 'neg' : 'pos'} mono>{killOn ? 'ON' : 'OFF'}</Badge>
             </span>
           </div>
-          <div style={{ marginTop: 8 }}>NIFTY <span style={{ color: marketTicks?.nifty != null ? color.text : color.textFaint, fontFamily: font.mono }}>{marketTicks?.nifty != null ? fmt(marketTicks.nifty) : '—'}</span></div>
+          {!collapsed && (
+            <div style={{ marginTop: 8 }}>NIFTY <span style={{ color: marketTicks?.nifty != null ? color.text : color.textFaint, fontFamily: font.mono }}>{marketTicks?.nifty != null ? fmt(marketTicks.nifty) : '—'}</span></div>
+          )}
           <button
+            title="Logout"
             style={{ marginTop: 8, padding: '2px 0', background: 'transparent', border: 'none', color: color.textSub, cursor: 'pointer', fontSize: '.72rem', fontFamily: font.sans }}
             onClick={() => { localStorage.removeItem('td_token'); location.reload(); }}
-          >⎋ Logout</button>
+          >{collapsed ? '⎋' : '⎋ Logout'}</button>
         </div>
       </aside>
 

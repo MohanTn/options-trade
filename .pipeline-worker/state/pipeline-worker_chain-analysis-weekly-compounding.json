@@ -1,0 +1,8 @@
+{
+  "branch": "pipeline-worker/chain-analysis-weekly-compounding",
+  "targetBranch": "main",
+  "worktreePath": "/tmp/pipeline-worker-dIbshu/worktree",
+  "attempt": 0,
+  "phase": "watch",
+  "mrIid": 1
+}
