@@ -12,6 +12,13 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ChainAnalysis
     private const double RiskFreeRate = 0.065;
     private const double AssumedIv = 0.15; // sigma used for delta-based strike selection
 
+    // Overnight gap stress test for naked (undefined-risk) structures: a GTT stop assumes a fill
+    // near its trigger, which only holds for a continuous intraday move — a gap prints straight
+    // through it with no chance to react (LifecycleManagerWorker doesn't even run outside market
+    // hours). Naked shorts are sized so a move this size, in either direction, still stays inside
+    // the per-position cap. Becomes a per-strategy config field once tunable (docs/gap-risk-management.md, item 3).
+    private const double GapStressPct = 0.035;
+
     /// <summary>Returns the enabled strategy whose VIX band contains the live VIX, or null.</summary>
     public async Task<StrategyConfig?> ActiveStrategyAsync(Guid fundId, decimal vix, CancellationToken ct = default) =>
         await db.StrategyConfigs
@@ -55,24 +62,40 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ChainAnalysis
             .Select(e => (Expiry: e, Dte: e.DayNumber - today.DayNumber))
             .OrderBy(x => x.Expiry).ToList();
 
+        var needsFar = config.Legs.Any(l => l.Expiry == ExpiryRank.Far);
+        // NIFTY's monthly contract (the last expiry falling in a given calendar month) carries
+        // materially deeper liquidity than the weeklies around it.
+        bool IsMonthly(DateOnly expiry) => availableDtes
+            .Where(x => x.Expiry.Year == expiry.Year && x.Expiry.Month == expiry.Month)
+            .All(x => x.Expiry <= expiry);
+
         // Every expiry inside the configured DTE window is eligible — each becomes a candidate family.
+        // Calendar-shaped strategies (near + far legs) are restricted to monthly expiries only: a
+        // calendar's near and far legs are meant to track the same strike (see FarFor below), which
+        // only holds up against a thin weekly if the market maker is actually quoting it — the
+        // monthly is reliably liquid on both legs instead.
         var eligible = availableDtes
             .Where(x => x.Dte >= config.EntryDteMin && x.Dte <= config.EntryDteMax)
+            .Where(x => !needsFar || IsMonthly(x.Expiry))
             .Select(x => x.Expiry).ToList();
         // Weekly compounding locks the ladder to the nearest eligible expiry so credits roll weekly.
         if (config.WeeklyCompounding && eligible.Count > 1)
             eligible = [eligible[0]];
         if (eligible.Count == 0)
         {
-            var closest = availableDtes.OrderBy(x => Math.Abs(x.Dte - (config.EntryDteMin + config.EntryDteMax) / 2)).FirstOrDefault();
-            var reason = $"No expiry in {config.EntryDteMin}–{config.EntryDteMax} DTE window for '{config.Name}'. "
+            var closest = availableDtes.Where(x => !needsFar || IsMonthly(x.Expiry))
+                .OrderBy(x => Math.Abs(x.Dte - (config.EntryDteMin + config.EntryDteMax) / 2)).FirstOrDefault();
+            var monthlyNote = needsFar ? "monthly " : "";
+            var reason = $"No {monthlyNote}expiry in {config.EntryDteMin}–{config.EntryDteMax} DTE window for '{config.Name}'. "
                        + $"Nearest available: {closest.Expiry:dd-MMM-yy} ({closest.Dte}d). Widen the DTE range in Settings.";
-            logger.LogWarning("No expiry in {Min}-{Max} DTE window for {Name}", config.EntryDteMin, config.EntryDteMax, config.Name);
+            logger.LogWarning("No {Monthly}expiry in {Min}-{Max} DTE window for {Name}", monthlyNote, config.EntryDteMin, config.EntryDteMax, config.Name);
             return ([], reason);
         }
 
-        var needsFar = config.Legs.Any(l => l.Expiry == ExpiryRank.Far);
-        DateOnly FarFor(DateOnly near) => availableDtes.Where(x => x.Expiry > near).Select(x => x.Expiry).FirstOrDefault();
+        // Far leg of a calendar always pairs with the *next* monthly (current-month monthly as
+        // near, next-month monthly as far), never an interim weekly — see the comment above.
+        DateOnly FarFor(DateOnly near) =>
+            availableDtes.Where(x => x.Expiry > near && IsMonthly(x.Expiry)).Select(x => x.Expiry).FirstOrDefault();
 
         // Fetch the full chain for every eligible expiry (+ far counterparts) in one round-trip.
         var expiriesToQuote = new HashSet<DateOnly>(eligible);
@@ -95,6 +118,8 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ChainAnalysis
         }
         var bias = chain?.BiasScore ?? 0m;
         var biasLabel = chain?.BiasLabel;
+        // Rising VIX intraday vs. the morning print — a risk-reduction brake only, never a boost.
+        var vixSizeMultiplier = VixDriftSizeMultiplier(vix, chain?.MorningVix ?? 0m);
 
         var candidates = new List<TradeProposal>();
         var seen = new HashSet<string>(); // dedupe expiry+strike sets that collapse to the same chain
@@ -112,7 +137,7 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ChainAnalysis
             foreach (var scale in DeltaScales)
             {
                 var (proposal, reason) = TryBuildCandidate(fund, config, vix, nearExpiry, farExpiry,
-                    instByExpiry, quoteMap, forward, today, scale, bias, biasLabel);
+                    instByExpiry, quoteMap, forward, today, scale, bias, biasLabel, vixSizeMultiplier);
                 if (proposal == null) { lastReason = reason; continue; }
 
                 var key = $"{proposal.ExpiryDate:yyyyMMdd}:" + string.Join(',',
@@ -142,7 +167,7 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ChainAnalysis
     private (TradeProposal? Proposal, string? Reason) TryBuildCandidate(
         Fund fund, StrategyConfig config, decimal vix, DateOnly nearExpiry, DateOnly farExpiry,
         Dictionary<DateOnly, List<KiteInstrument>> instByExpiry, Dictionary<long, KiteQuote> quoteMap,
-        double forward, DateOnly today, decimal deltaScale, decimal bias, string? biasLabel)
+        double forward, DateOnly today, decimal deltaScale, decimal bias, string? biasLabel, decimal vixSizeMultiplier)
     {
         var nearInsts = instByExpiry[nearExpiry];
         bool needsFar = config.Legs.Any(l => l.Expiry == ExpiryRank.Far);
@@ -151,14 +176,32 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ChainAnalysis
         double tNear = (nearExpiry.DayNumber - today.DayNumber) / 365.0;
         double tFar = needsFar && farExpiry != default ? (farExpiry.DayNumber - today.DayNumber) / 365.0 : tNear;
 
-        // Resolve each leg by target delta; short legs are pushed further OTM by deltaScale.
+        // Effective (width-rung + chain-bias-skewed) target delta per option type's short leg,
+        // computed once so a buy leg configured with the same target delta as its matching sell leg
+        // — i.e. a calendar's far leg, meant to track the near leg's strike — shares exactly this
+        // value instead of drifting to its own raw, unskewed strike. A buy leg with a genuinely
+        // distinct target delta (e.g. an iron condor's protective wing) keeps its own, untouched.
+        // Grouped (not a straight ToDictionary) because the leg editor doesn't stop an operator from
+        // configuring two sell legs of the same option type — first one wins, same as the
+        // FirstOrDefault used for `sellLeg` below, rather than throwing on the duplicate key.
+        var sellDeltaByType = config.Legs.Where(l => l.Side == Side.Sell)
+            .GroupBy(l => l.OptionType)
+            .ToDictionary(g => g.Key, g => SkewedDelta(g.First().TargetDelta * deltaScale, g.Key, bias));
+
         var picks = new List<(StrategyLeg Cfg, KiteInstrument Inst, KiteQuote Quote)>();
         foreach (var leg in config.Legs)
         {
             var (insts, t) = leg.Expiry == ExpiryRank.Far ? (farInsts, tFar) : (nearInsts, tNear);
-            var wantDelta = leg.Side == Side.Sell
-                ? SkewedDelta(leg.TargetDelta * deltaScale, leg.OptionType, bias)
-                : leg.TargetDelta;
+            decimal wantDelta;
+            if (leg.Side == Side.Sell)
+                wantDelta = sellDeltaByType[leg.OptionType];
+            else
+            {
+                var sellLeg = config.Legs.FirstOrDefault(l => l.OptionType == leg.OptionType && l.Side == Side.Sell);
+                wantDelta = sellLeg != null && sellLeg.TargetDelta == leg.TargetDelta
+                    ? sellDeltaByType[leg.OptionType]
+                    : leg.TargetDelta;
+            }
             var pick = SelectByDelta(insts, quoteMap, leg.OptionType, wantDelta, forward, t);
             if (pick == null)
                 return (null, $"Could not resolve {leg.Side} {leg.OptionType} ~{wantDelta:F2}Δ for '{config.Name}' "
@@ -167,7 +210,7 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ChainAnalysis
         }
 
         decimal perUnitCredit = PerUnitCredit(picks);
-        var (maxLossPerUnit, _) = MaxLossPerUnit(picks, perUnitCredit, config);
+        var (maxLossPerUnit, _) = MaxLossPerUnit(picks, perUnitCredit, config, forward, today);
         if (maxLossPerUnit <= 0)
             return (null, $"'{config.Name}' produces zero/negative max-loss (net premium ₹{perUnitCredit:N0}/unit). "
                         + "Quotes may be stale — bid/ask are 0 outside market hours.");
@@ -176,11 +219,12 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ChainAnalysis
                         + $"cap at {deltaScale:P0} of target Δ.");
 
         // Size within the configured fraction of the per-position loss budget. Weekly compounding
-        // scales it with fund growth so realised credits enlarge the next week's size, but the
-        // hard PerPositionMaxLoss cap below always wins.
+        // scales it with fund growth so realised credits enlarge the next week's size, and a rising
+        // intraday VIX shrinks it, but the hard PerPositionMaxLoss cap below always wins.
         decimal budget = fund.PerPositionMaxLoss * config.SizingPct / 100m;
         if (config.WeeklyCompounding && fund.StartingCapital > 0)
             budget *= Math.Max(1m, fund.CurrentNav / fund.StartingCapital);
+        budget *= vixSizeMultiplier;
         int lots = Math.Max(1, (int)Math.Floor((double)(budget / (maxLossPerUnit * lotSize))));
         decimal maxLoss = maxLossPerUnit * lots * lotSize;
         while (lots > 1 && maxLoss > fund.PerPositionMaxLoss) { lots--; maxLoss = maxLossPerUnit * lots * lotSize; }
@@ -208,7 +252,8 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ChainAnalysis
                       + (config.GttEnabled ? $", GTT stop @ {config.GttPremiumPct:F0}% premium" : "")
                       + (deltaScale < 1m ? $"; shorts at {deltaScale:P0} of target Δ for a wider, lower-risk strangle" : "")
                       + (Math.Abs(bias) >= 0.15m && biasLabel != null ? $"; chain bias {biasLabel} ({bias:+0.00;-0.00}) — short strikes skewed to the safer side" : "")
-                      + (config.WeeklyCompounding ? "; weekly compounding — nearest expiry, size scaled with NAV" : ""),
+                      + (config.WeeklyCompounding ? "; weekly compounding — nearest expiry, size scaled with NAV" : "")
+                      + (vixSizeMultiplier < 1m ? $"; VIX rising intraday vs. the morning open — size cut to {vixSizeMultiplier:P0}" : ""),
             EntryDte = entryDte,
             TargetExitDte = config.TargetExitDte,
             Lots = lots,
@@ -236,10 +281,12 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ChainAnalysis
     /// Winged structures (iron condor / vertical — including a "double calendar" that is really a
     /// single-expiry debit condor) risk the wider wing less net premium; for net-debit structures a
     /// GTT stop at <see cref="StrategyConfig.GttPremiumPct"/>% of the debit (2× by default) caps that.
-    /// A same-strike calendar risks the debit paid; a naked credit relies on the GTT premium multiple.
+    /// A same-strike calendar risks the debit paid; a naked credit is sized to the worse of the GTT
+    /// premium multiple and a gap-stress re-pricing (see <see cref="GapStressLoss"/>).
     /// </summary>
     private static (decimal MaxLossPerUnit, bool IsDefinedRisk) MaxLossPerUnit(
-        List<(StrategyLeg Cfg, KiteInstrument Inst, KiteQuote Quote)> legs, decimal perUnitCredit, StrategyConfig config)
+        List<(StrategyLeg Cfg, KiteInstrument Inst, KiteQuote Quote)> legs, decimal perUnitCredit, StrategyConfig config,
+        double forward, DateOnly today)
     {
         decimal Width(OptionType type, bool callSide)
         {
@@ -271,9 +318,49 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ChainAnalysis
         if (perUnitCredit <= 0)
             return (-perUnitCredit, true); // same-strike calendar: debit paid is the max loss
 
-        // Naked short credit — bounded by the GTT stop multiple of premium.
-        decimal mult = config.GttEnabled ? config.GttPremiumPct / 100m : 2m;
-        return (perUnitCredit * mult, false);
+        // Naked short credit — sized to the worse of two estimates: the GTT stop multiple of
+        // premium (holds only if the stop can actually fill near its trigger) and a gap-stress
+        // re-pricing of the short legs at a large adverse overnight move (the case a GTT cannot
+        // protect against at all, since there is no continuous price for it to trigger on).
+        decimal stopMult = config.GttEnabled ? config.GttPremiumPct / 100m : 2m;
+        decimal stopCapLoss = perUnitCredit * stopMult;
+        decimal gapStressLoss = GapStressLoss(legs, forward, today);
+        return (Math.Max(stopCapLoss, gapStressLoss), false);
+    }
+
+    /// <summary>
+    /// Re-prices every short leg of a naked structure at spot stressed by ±<see cref="GapStressPct"/>
+    /// (each leg's own market-implied vol, held constant — a real gap likely also expands vol, so
+    /// this is a floor, not a ceiling) and returns the worse-direction buy-back cost less the credit
+    /// received. Only called for structures with no offsetting long leg (see caller).
+    /// </summary>
+    private static decimal GapStressLoss(
+        List<(StrategyLeg Cfg, KiteInstrument Inst, KiteQuote Quote)> legs, double forward, DateOnly today)
+    {
+        var shorts = legs.Where(l => l.Cfg.Side == Side.Sell).ToList();
+        if (shorts.Count == 0) return 0m;
+
+        decimal CostAtStress(double stressedForward)
+        {
+            decimal cost = 0m;
+            foreach (var (cfg, inst, quote) in shorts)
+            {
+                double t = Math.Max((inst.Expiry.DayNumber - today.DayNumber) / 365.0, 1.0 / 365.0);
+                bool isCall = cfg.OptionType == OptionType.CE;
+                double mid = quote.Bid > 0 && quote.Ask > 0 ? (double)(quote.Bid + quote.Ask) / 2 : (double)quote.Ltp;
+                double legIv = Black76.SolveIv(mid, forward, (double)inst.Strike, t, RiskFreeRate, isCall);
+                if (legIv <= 0) legIv = AssumedIv; // illiquid/stale quote — fall back to the flat assumption
+                var g = isCall
+                    ? Black76.ComputeCall(stressedForward, (double)inst.Strike, t, RiskFreeRate, legIv)
+                    : Black76.ComputePut(stressedForward, (double)inst.Strike, t, RiskFreeRate, legIv);
+                cost += (decimal)g.Price;
+            }
+            return cost;
+        }
+
+        decimal entryCredit = shorts.Sum(l => l.Quote.Bid > 0 && l.Quote.Ask > 0 ? (l.Quote.Bid + l.Quote.Ask) / 2 : l.Quote.Ltp);
+        decimal worstCost = Math.Max(CostAtStress(forward * (1 + GapStressPct)), CostAtStress(forward * (1 - GapStressPct)));
+        return Math.Max(worstCost - entryCredit, 0m);
     }
 
     // Chain-bias strike skew for short legs: a bullish bias (bias > 0) keeps short puts nearer
@@ -284,6 +371,19 @@ public class SignalEngine(ThetaDeskDbContext db, IKiteClient kite, ChainAnalysis
         if (bias == 0) return target;
         decimal shift = 0.30m * bias * (type == OptionType.PE ? 1 : -1);
         return Math.Clamp(target * (1 + shift), 0.03m, 0.60m);
+    }
+
+    // VIX rising intraday vs. the morning print is the same "stay conservative, size writing down"
+    // signal ChainAnalysisService already renders as advisory text (its vixTrend string) — this
+    // turns it into an actual size cut. Mirrors that method's 1% dead-zone so noise doesn't trigger
+    // it, and only ever brakes: a falling/flat VIX applies no size boost, since sizing up on a
+    // "green light" read is a separate decision left to the operator, not something to automate.
+    private static decimal VixDriftSizeMultiplier(decimal vix, decimal morningVix)
+    {
+        if (morningVix <= 0) return 1m;
+        decimal drift = (vix - morningVix) / morningVix;
+        if (drift <= 0.01m) return 1m;
+        return Math.Clamp(1m - drift * 2m, 0.5m, 1m);
     }
 
     private static (KiteInstrument Inst, KiteQuote Quote)? SelectByDelta(
