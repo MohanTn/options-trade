@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@mohantn/scaffold-core": "file:../../scaffold-toolkit/packages/core"
+  }
+}

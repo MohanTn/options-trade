@@ -1,0 +1,10 @@
+{
+  "projectType": "dotnet",
+  "packs": {
+    "backend": {
+      "url": "https://github.com/MohanTn/scaffold-templates-dotnet.git",
+      "version": "v8-controller",
+      "pinnedSha": "ab894b2502a2ba8373c9554feda3cea765ed580f"
+    }
+  }
+}
