@@ -1,0 +1,1795 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shared Understanding — Vega-Decay Pattern → Seller&#039;s Edge</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --accent: #2563eb;
+        --bg: #f8fafc;
+        --card-bg: #ffffff;
+        --text: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --status-draft: #64748b;
+        --status-review: #f59e0b;
+        --status-approved: #16a34a;
+        --wrong: #e11d48;
+        --warn: #b45309;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.6;
+        color: var(--text);
+        background: var(--bg);
+        min-height: 100vh;
+      }
+
+      nav#toc {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 240px;
+        height: 100vh;
+        background: var(--card-bg);
+        border-right: 1px solid var(--border);
+        overflow-y: auto;
+        z-index: 100;
+        padding: 2rem 1rem;
+      }
+
+      nav#toc .brand {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: var(--accent);
+        margin-bottom: 2rem;
+        display: block;
+      }
+
+      nav#toc a {
+        display: block;
+        padding: 0.5rem 0.75rem;
+        margin: 0.5rem 0;
+        color: var(--text);
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+      }
+
+      nav#toc a:hover {
+        background: var(--bg);
+        color: var(--accent);
+      }
+
+      nav#toc a.active {
+        background: var(--accent);
+        color: white;
+        font-weight: 500;
+      }
+
+      main {
+        margin-left: 240px;
+        padding: 3rem 2rem;
+        margin-right: auto;
+      }
+
+      header {
+        margin-bottom: 3rem;
+      }
+
+      header h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+      }
+
+      header .subtitle {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+
+      .status-banner {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .status-banner.draft {
+        background: rgba(100, 116, 139, 0.1);
+        color: var(--status-draft);
+        border-left: 4px solid var(--status-draft);
+      }
+
+      .status-banner.review {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--status-review);
+        border-left: 4px solid var(--status-review);
+      }
+
+      .status-banner.approved {
+        background: rgba(22, 163, 74, 0.1);
+        color: var(--status-approved);
+        border-left: 4px solid var(--status-approved);
+      }
+
+      section {
+        margin-bottom: 3rem;
+        scroll-margin-top: 2rem;
+      }
+
+      section h2 {
+        font-size: 1.4rem;
+        margin-bottom: 1.5rem;
+        padding-left: 1rem;
+        border-left: 4px solid var(--accent);
+        color: var(--text);
+      }
+
+      .card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      .card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        color: var(--text);
+      }
+
+      .card h4 {
+        font-size: 1rem;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        color: var(--accent);
+      }
+
+      .card h4:first-child {
+        margin-top: 0;
+      }
+
+      .card p {
+        margin-bottom: 1rem;
+        color: var(--text);
+      }
+
+      .card ul,
+      .card ol {
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .card li {
+        margin-bottom: 0.5rem;
+        color: var(--text);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1rem;
+      }
+
+      table thead {
+        background: var(--bg);
+        border-bottom: 2px solid var(--border);
+      }
+
+      table th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text);
+        font-size: 0.9rem;
+        white-space: nowrap;
+      }
+
+      table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+        font-size: 0.95rem;
+        white-space: nowrap;
+      }
+
+      table tbody tr:nth-child(even) {
+        background: rgba(100, 116, 139, 0.02);
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        margin-bottom: 1rem;
+      }
+
+      /* Interactive tables hold sentences, not identifiers: let them wrap. */
+      #u-table td,
+      #oq-table td {
+        white-space: normal;
+        vertical-align: top;
+      }
+
+      #u-table .u-statement {
+        min-width: 320px;
+      }
+
+      #u-table .u-verdict {
+        min-width: 210px;
+      }
+
+      #oq-table td:nth-child(2) {
+        min-width: 260px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 0.15rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .badge.src-user {
+        background: rgba(37, 99, 235, 0.12);
+        color: var(--accent);
+      }
+      .badge.src-code {
+        background: rgba(22, 163, 74, 0.12);
+        color: var(--status-approved);
+      }
+      .badge.src-inferred {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warn);
+      }
+      .badge.src-assumed {
+        background: rgba(225, 29, 72, 0.12);
+        color: #be123c;
+      }
+      .badge.conf-high {
+        background: rgba(22, 163, 74, 0.12);
+        color: var(--status-approved);
+      }
+      .badge.conf-medium {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warn);
+      }
+      .badge.conf-low {
+        background: rgba(225, 29, 72, 0.12);
+        color: #be123c;
+      }
+      .badge.kind-example {
+        background: rgba(22, 163, 74, 0.12);
+        color: var(--status-approved);
+      }
+      .badge.kind-counter {
+        background: rgba(225, 29, 72, 0.12);
+        color: #be123c;
+      }
+      .badge.tension-badge {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warn);
+      }
+
+      .u-evidence {
+        margin-top: 0.35rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .u-impact {
+        margin-top: 0.25rem;
+        font-size: 0.8rem;
+        color: var(--warn);
+      }
+
+      .priority-flag {
+        margin-top: 0.4rem;
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #be123c;
+        background: rgba(225, 29, 72, 0.09);
+        border: 1px solid rgba(225, 29, 72, 0.25);
+        border-radius: 999px;
+        padding: 0.1rem 0.55rem;
+      }
+
+      .fork-hint {
+        margin-top: 0.4rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--accent);
+      }
+
+      .u-hint {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+      }
+
+      /* Verdict buttons (claims + examples) */
+      .verdict-group {
+        display: flex;
+        gap: 0.35rem;
+        margin-bottom: 0.4rem;
+      }
+
+      .verdict-btn {
+        width: 2rem;
+        height: 2rem;
+        border: 1px solid var(--border);
+        background: var(--card-bg);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        line-height: 1;
+        color: var(--text-muted);
+        transition: all 0.15s;
+      }
+
+      .verdict-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .verdict-btn.v-yes.selected {
+        background: var(--status-approved);
+        border-color: var(--status-approved);
+        color: white;
+      }
+      .verdict-btn.v-partly.selected {
+        background: var(--status-review);
+        border-color: var(--status-review);
+        color: white;
+      }
+      .verdict-btn.v-no.selected {
+        background: var(--wrong);
+        border-color: var(--wrong);
+        color: white;
+      }
+
+      /* Row state colouring (agreed / flagged) for claims */
+      #u-table tbody tr[data-state="agreed"] {
+        background: rgba(22, 163, 74, 0.07);
+      }
+      #u-table tbody tr[data-state="flagged"] {
+        background: rgba(225, 29, 72, 0.07);
+      }
+      #u-table tbody tr[data-priority="high"] td:first-child {
+        box-shadow: inset 3px 0 0 #be123c;
+      }
+
+      /* Fork radio options */
+      .fork-opt,
+      .tension-opt {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.45rem;
+        font-size: 0.88rem;
+        padding: 0.3rem 0.4rem;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-bottom: 0.2rem;
+      }
+      .fork-opt:hover,
+      .tension-opt:hover {
+        background: var(--bg);
+      }
+      .fork-opt input,
+      .tension-opt input {
+        margin-top: 0.28rem;
+      }
+      .fork-neither span {
+        color: var(--text-muted);
+      }
+
+      /* Structured correction options */
+      .u-correction {
+        margin-top: 0.25rem;
+      }
+      .correction-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      }
+      .correction-label {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-right: 0.15rem;
+      }
+      .correction-opt {
+        border: 1px solid var(--border);
+        background: var(--card-bg);
+        border-radius: 6px;
+        padding: 0.25rem 0.6rem;
+        font-size: 0.82rem;
+        cursor: pointer;
+        color: var(--text);
+        transition: all 0.15s;
+      }
+      .correction-opt:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .correction-opt.selected {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+      }
+
+      /* Add-a-claim */
+      .add-claim-row {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 0.5rem;
+      }
+      .ghost-btn {
+        background: var(--card-bg);
+        border: 1px dashed var(--accent);
+        color: var(--accent);
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .ghost-btn:hover {
+        background: rgba(37, 99, 235, 0.06);
+      }
+      #u-table tbody tr.added-row {
+        background: rgba(37, 99, 235, 0.05);
+      }
+      textarea.added-text {
+        width: 100%;
+        min-width: 260px;
+        min-height: 2.5rem;
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.9rem;
+        color: var(--text);
+        resize: vertical;
+      }
+      .remove-added {
+        background: none;
+        border: none;
+        color: var(--wrong);
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+      .remove-added:hover {
+        text-decoration: underline;
+      }
+
+      /* Recall / success statement */
+      .recall-card {
+        border-left: 4px solid var(--status-review);
+        background: rgba(245, 158, 11, 0.05);
+      }
+      .recall-card h3 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      textarea#recall-box {
+        width: 100%;
+        min-height: 4rem;
+        padding: 0.6rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        color: var(--text);
+        resize: vertical;
+      }
+
+      /* Tensions */
+      .tension-card {
+        border-left: 4px solid var(--status-review);
+      }
+      .tension-head {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .tension-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      .tension-col {
+        padding: 0.85rem 1rem;
+        border-radius: 8px;
+        background: var(--bg);
+      }
+      .tension-col.want {
+        border-top: 3px solid var(--accent);
+      }
+      .tension-col.code {
+        border-top: 3px solid var(--wrong);
+      }
+      .tension-col h4 {
+        margin: 0 0 0.4rem 0;
+      }
+      .tension-col p {
+        margin: 0;
+        font-size: 0.92rem;
+      }
+      .tension-rec {
+        font-size: 0.9rem;
+        background: rgba(37, 99, 235, 0.05);
+        border-radius: 8px;
+        padding: 0.6rem 0.85rem;
+        margin-bottom: 1rem;
+      }
+      .tension-resolve {
+        border-top: 1px solid var(--border);
+        padding-top: 0.85rem;
+      }
+      .resolve-label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.88rem;
+        margin-bottom: 0.5rem;
+      }
+      .tension-card[data-choice] {
+        border-left-color: var(--status-approved);
+      }
+
+      /* Acceptance examples */
+      .example-card {
+        border-left: 4px solid var(--status-approved);
+      }
+      .example-card.ex-counter {
+        border-left-color: var(--wrong);
+      }
+      .ex-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.85rem;
+      }
+      .ex-verdict {
+        margin-bottom: 0;
+      }
+      .ex-gwt > div {
+        padding: 0.35rem 0;
+        font-size: 0.93rem;
+        border-bottom: 1px dashed var(--border);
+      }
+      .ex-gwt > div:last-child {
+        border-bottom: none;
+      }
+      .gwt-k {
+        display: inline-block;
+        width: 3.6rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .ex-refs {
+        margin-top: 0.5rem;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+      .example-card[data-verdict="yes"] {
+        background: rgba(22, 163, 74, 0.06);
+      }
+      .example-card[data-verdict="no"] {
+        background: rgba(225, 29, 72, 0.06);
+      }
+
+      .mermaid-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+        position: relative;
+      }
+
+      .mermaid {
+        display: flex;
+        justify-content: center;
+      }
+
+      .diagram-toggle-btn {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text-muted);
+        font-size: 1rem;
+        line-height: 1;
+        cursor: pointer;
+        z-index: 2;
+        transition: all 0.2s;
+      }
+
+      .diagram-toggle-btn:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      .diagram-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        z-index: 999;
+      }
+
+      .diagram-backdrop.active {
+        display: block;
+      }
+
+      body.diagram-lock {
+        overflow: hidden;
+      }
+
+      .mermaid-card.diagram-maximized {
+        position: fixed;
+        inset: 2rem;
+        z-index: 1000;
+        overflow: auto;
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+      }
+
+      .mermaid-card.diagram-maximized .mermaid {
+        width: 100%;
+        height: 100%;
+      }
+
+      .mermaid-card.diagram-maximized .mermaid svg {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+      }
+
+      pre,
+      code {
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-width: 100%;
+        font-family: "Courier New", Courier, monospace;
+      }
+
+      pre {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+        line-height: 1.4;
+      }
+
+      code {
+        background: rgba(100, 116, 139, 0.1);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        color: #e11d48;
+        font-size: 0.9rem;
+      }
+
+      pre code {
+        background: none;
+        padding: 0;
+        color: var(--text);
+      }
+
+      details {
+        margin-bottom: 1.5rem;
+      }
+
+      details summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--accent);
+        padding: 0.75rem;
+        user-select: none;
+        transition: all 0.2s;
+      }
+
+      details summary:hover {
+        background: var(--bg);
+        border-radius: 6px;
+      }
+
+      details[open] summary {
+        margin-bottom: 1rem;
+      }
+
+      details pre {
+        margin-top: 1rem;
+      }
+
+      .approval-gate {
+        background: rgba(22, 163, 74, 0.1);
+        border-left: 4px solid var(--status-approved);
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        color: var(--status-approved);
+        font-weight: 500;
+        margin-top: 2rem;
+      }
+
+      .ai-overview-card {
+        border-left: 4px solid var(--accent);
+        background: rgba(37, 99, 235, 0.04);
+      }
+
+      .copy-qa-btn {
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .copy-qa-btn:hover {
+        opacity: 0.9;
+      }
+      .copy-qa-btn.copied {
+        background: var(--status-approved);
+      }
+
+      textarea.oq-answer,
+      textarea.u-note,
+      textarea.t-note,
+      textarea.ex-note {
+        width: 100%;
+        min-width: 200px;
+        min-height: 3rem;
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.9rem;
+        color: var(--text);
+        resize: vertical;
+      }
+      textarea.u-note,
+      textarea.t-note,
+      textarea.ex-note {
+        min-width: 180px;
+        margin-top: 0.35rem;
+      }
+
+      #sync-widget {
+        position: fixed;
+        right: 1.25rem;
+        bottom: 1.25rem;
+        z-index: 500;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        padding: 0.9rem 1rem;
+        width: 250px;
+        font-size: 0.85rem;
+      }
+      #sync-widget .sync-title {
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+      }
+      #sync-widget .sync-counts {
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+      }
+      #sync-widget .sync-bar {
+        height: 6px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+      }
+      #sync-bar-fill {
+        height: 100%;
+        width: 0;
+        background: var(--status-approved);
+        transition: width 0.2s;
+      }
+      .sync-gate {
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+        color: var(--text-muted);
+      }
+      .sync-gate.warn {
+        color: #be123c;
+      }
+      .sync-gate.ok {
+        color: var(--status-approved);
+      }
+      #copy-review-btn {
+        width: 100%;
+      }
+
+      section,
+      .card {
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+
+      @media (max-width: 900px) {
+        nav#toc {
+          position: static;
+          width: 100%;
+          height: auto;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+          padding: 1rem;
+          margin-bottom: 1rem;
+        }
+        nav#toc .brand {
+          display: inline-block;
+          margin-right: 2rem;
+        }
+        nav#toc a {
+          display: inline-block;
+          margin: 0 0.5rem;
+          padding: 0.4rem 0.6rem;
+          font-size: 0.85rem;
+        }
+        main {
+          margin-left: 0;
+          padding: 2rem 1rem;
+        }
+        header h1 {
+          font-size: 1.5rem;
+        }
+        .tension-cols {
+          grid-template-columns: 1fr;
+        }
+        #sync-widget {
+          right: 0.75rem;
+          bottom: 0.75rem;
+          width: 210px;
+          padding: 0.7rem 0.8rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav id="toc">
+      <span class="brand">🧠 Understanding</span>
+      <a href="#s-overview">★ At a Glance</a>
+      <a href="#s0">0 · Document Control</a>
+      <a href="#s1">1 · The Concept</a>
+      <a href="#s2">2 · The Code Today</a>
+      <a href="#s3">3 · The Change</a>
+      <a href="#s4">4 · Acceptance Examples</a>
+      <a href="#s5">5 · Understanding Checklist</a>
+      <a href="#s6">6 · Tensions</a>
+      <a href="#s7">7 · Scope</a>
+      <a href="#s8">8 · Open Questions</a>
+      <a href="#s9">9 · Risks</a>
+      <a href="#s10">10 · Implementation Sketch</a>
+    </nav>
+
+    <main>
+      <header>
+        <h1>🧠 Shared Understanding — Vega-Decay Pattern → Seller&#039;s Edge</h1>
+        <p class="subtitle">Mine the archived NIFTY chain vega-decay history for a repeatable, seller-usable pattern, and design where a validated finding would plug into the existing bias/sizing pipeline. · ThetaDesk.Api · ChainAnalysisService · Postgres VegaFlowDailySnapshots · SignalEngine · React ChainAnalysisView</p>
+      </header>
+
+      <section id="s-overview">
+        <h2>🤖 At a Glance — Do We Agree on the Goal?</h2>
+        <div class="card ai-overview-card">
+          <h3>My understanding of what you want</h3>
+          <p>ThetaDesk already archives one permanent Postgres row per trading day (<code>VegaFlowDailySnapshots</code>, since migration <code>20260702205705</code>) holding the full intraday series of CE and PE Σ-vega %-change vs the morning open — for both the near-week and near-month expiries — sampled every ≥45s during market hours, alongside NIFTY spot at each tick. That is almost certainly the "post-crest database" referenced: a curve that typically rises to an intraday peak (the crest) as one side gets bought, then decays back down. Today this series is consumed <em>live and same-day only</em>: <code>ChainAnalysisService.Compose()</code> folds the current day's vega-flow reading into a weighted <code>BiasScore</code> alongside PCR, OI flow, max pain, skew and wall migration, and <code>SignalEngine</code> uses that score to skew short-leg target deltas by up to ±30%. The only other "pattern" logic that exists is a live, rule-based opening-range breakout in the frontend (<code>vegaFlowRange.ts</code>) — not a backtested, cross-day statistical study. The ask is different: look across <em>all</em> archived days (currently on the order of a week and a half's worth) for a repeatable shape in the post-crest decay that predicts something useful for a seller — direction, timing, or confirmation — and decide how a validated finding would feed back into the existing pipeline. This document scopes that analysis: what data it reads, what "crest" and "decay" mean, what outcome variable counts as an edge, and where the result would plug in (a new Compose() driver, an advisory-only note, or a new SignalEngine timing gate) — without yet running the analysis or changing any scoring code, since this session has no live connection to the operator's running Postgres instance.</p>
+        </div>
+        <div class="card recall-card">
+          <h3>✍️ Your turn — success in your own words</h3>
+          <p class="u-hint">
+            Before trusting my summary, write what a correct result looks like
+            to you, in a sentence or two. If your words and mine diverge, that
+            gap is the most important thing on this page. Your text is included
+            in the copied review so I can reconcile the two.
+          </p>
+          <textarea
+            id="recall-box"
+            placeholder="In my words, this is done when…"
+          ></textarea>
+        </div>
+      </section>
+
+      <section id="s0">
+        <h2>0 · Document Control</h2>
+        <div class="status-banner draft">
+          <strong>Status:</strong> DRAFT ·
+          <strong>Version:</strong> v1 ·
+          <strong>Last Updated:</strong> 2026-07-13 ·
+          <strong>Author:</strong> claude-sonnet-4.5
+        </div>
+
+        <div class="card">
+          <h3>Revision Log</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Version</th>
+                  <th>Date</th>
+                  <th>Summary of Changes</th>
+                  <th>Driven By</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>v1</td><td>2026-07-13</td><td>First draft — scoped the vega-decay pattern-mining request against the existing VegaFlowDailySnapshots archive and bias pipeline.</td><td>First generation</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="approval-gate">
+          <strong>Approval Gate:</strong> Implementation begins only after every
+          high-stakes claim in Section 5 is verdicted, every tension is resolved,
+          the acceptance examples you approve are agreed as binding, and you flip
+          this document to APPROVED. Matching mental models is the deliverable
+          here; code comes later.
+        </div>
+      </section>
+
+      <section id="s1">
+        <h2>1 · The Concept, In My Own Words</h2>
+        <div class='card'><p>Every trading day, ThetaDesk already watches the NIFTY option chain reprice in real time and tracks, side by side, how much the calls' total vega and the puts' total vega have moved away from that morning's opening reading. On most days that curve isn't flat — one side (or both) gets bid up through the morning, peaks somewhere around midday (the <strong>crest</strong>), and then bleeds back down into the close as the buying pressure that drove it fades. That shape is already captured and permanently archived, one row per day, going back to the day this feature shipped.</p><p>The idea here is that the <em>shape</em> of that post-crest decay — how fast it falls, how far, on which side, relative to where NIFTY spot was sitting at the time — might not be random. If calls decaying hard after a crest tends to precede a specific kind of afternoon (say, a fade back toward the day's open, or a confirmation that the morning's move is exhausted), that's a genuine timing or directional edge a premium seller can lean on: a reason to enter (or wait to enter) a short strangle with more conviction than the chain's static Greeks alone would give. This matters because the fund's whole edge is selling theta — anything that improves the odds of selling into range-bound, decaying-vol conditions (rather than into a move that's about to run) directly improves win rate and reduces the frequency of adjustment/stop-loss events.</p><p>The catch, made explicit in this document, is that the archive is young — on the order of a week and a half of trading days as of today — so the honest first step is to define the methodology precisely (what counts as a crest, what counts as decay, what forward outcome proves an edge) rather than to declare a pattern found on too few days.</p></div>
+      </section>
+
+      <section id="s2">
+        <h2>2 · What the Code Does Today</h2>
+        <div class='card'><p>The data already exists and is already used — just narrowly, and only same-day. <code>ChainAnalysisService.AnalyzeAsync</code> (run on every chain scan, and re-triggered every 60s during market hours by <code>ChainAnalysisRefresher</code>) computes each expiry's Σ-vega basket and its %-change versus that day's morning capture, appends a sample to a Redis list (<code>chain:vegaflow:{yyyyMMdd}</code>, ≥45s apart, market hours only), and — once 15:30 IST is reached — archives that day's full series permanently into Postgres as one <code>VegaFlowDailySnapshot</code> row (idempotent via a unique index on <code>TradingDate</code>). The same reading also flows, live, into <code>Compose()</code>, which blends it (0.6 near-week / 0.4 near-month) with PCR, OI order-flow, max-pain pull, IV skew and OI-wall migration into a single <code>BiasScore</code> ∈ [−1, +1]. <code>SignalEngine.GenerateCandidatesAsync</code> reads that score and skews short-leg target deltas toward the safer side by up to ±30%. On the frontend, <code>ChainAnalysisView.tsx</code> plots the intraday series, and <code>vegaFlowRange.ts</code> implements the one piece of 'pattern' logic that exists today: an opening-range breakout rule (first-N-minutes' high/low band; a later close outside it fires a sound alert) — a live, same-day heuristic, not something derived from historical data.</p><pre class='mermaid'>flowchart TD
+  A[ChainAnalysisService.AnalyzeAsync] --> B[Compose per-expiry CE/PE vega change %]
+  B --> C[Redis chain:vegaflow:yyyyMMdd list]
+  C -->|>=15:30 IST, once/day| D[(Postgres VegaFlowDailySnapshots)]
+  B --> E[Compose BiasScore]
+  E --> F[SignalEngine +/-30% delta skew]
+  C --> G[GET /api/v1/analysis/vega-flow]
+  G --> H[ChainAnalysisView.tsx chart]
+  H --> I[vegaFlowRange.ts opening-range breakout alert]
+  D -.one day at a time.-> J[GetVegaFlowSnapshotAsync history picker]
+</pre><p>Nothing today reads across multiple archived days at once — <code>D</code> is written to and read from one day at a time; there is no aggregate query, no crest/decay feature extraction, and no correlation against any forward outcome.</p></div>
+      </section>
+
+      <section id="s3">
+        <h2>3 · The Change — Before → After</h2>
+        <table class='table'><thead><tr><th></th><th>Before (today)</th><th>After (this analysis capability)</th></tr></thead><tbody><tr><td>Data consumed</td><td>Only today's series, live, inside <code>Compose()</code></td><td>Every archived day in <code>VegaFlowDailySnapshots</code>, loaded at once</td></tr><tr><td>'Pattern' logic</td><td>Live opening-range breakout rule (<code>vegaFlowRange.ts</code>) — a fixed heuristic, not derived from history</td><td>Crest/decay shape extracted per day, correlated against a chosen forward outcome across all archived days</td></tr><tr><td>Output</td><td>A same-day <code>BiasScore</code> driver + a chart</td><td>A quantified finding (hit-rate / correlation, with sample-size caveat) the operator reviews before any wiring change</td></tr><tr><td>Feedback into trading</td><td>N/A</td><td>Undecided (U10 fork): new Compose() driver, advisory text, or a SignalEngine timing gate</td></tr><tr><td>Confidence today</td><td>N/A</td><td>Explicitly hypothesis-only until ≥30 trading days exist (T1, OQ2)</td></tr></tbody></table><pre class='mermaid'>flowchart TD
+  D[(Postgres VegaFlowDailySnapshots, all days)] --> K[Load-all-days query]
+  K --> L[Per-day smoothing + crest detection]
+  L --> M[Post-crest decay features: depth, slope, timing, side]
+  M --> N[Join vs chosen forward outcome]
+  N --> O[Hit-rate / correlation report + sample-size caveat]
+  O -->|operator reviews| P{Feedback destination}
+  P -->|option A| Q[New Compose driver]
+  P -->|option B| R[Advisory-only text]
+  P -->|option C| S[SignalEngine timing gate]
+</pre>
+      </section>
+
+      <section id="s4">
+        <h2>4 · Acceptance Examples — Sign Off the Behaviour</h2>
+        <p class="u-hint">
+          Each example is a concrete input → outcome I believe you want (or, for a
+          counter-example, one that must NOT happen). Mark ✓ if that's the behaviour
+          you expect, ✗ if the outcome is wrong. The ones you ✓ become the binding
+          acceptance criteria the implementation is graded against — this is where
+          understanding turns into something testable.
+        </p>
+        <div class="card example-card ex-example" data-id="E1" data-example="Given the archived VegaFlowDailySnapshots for every trading day since 2026-07-02; When a new &#039;load all days&#039; query runs against the table; Then it returns one date-ordered series per day, at most one row per TradingDate (already enforced by the DB&#039;s unique index), covering CE and PE for both near-week and near-month tenors"><div class="ex-head"><span class="badge kind-example">E1 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> the archived VegaFlowDailySnapshots for every trading day since 2026-07-02</div><div><span class="gwt-k">When</span> a new &#039;load all days&#039; query runs against the table</div><div><span class="gwt-k">Then</span> it returns one date-ordered series per day, at most one row per TradingDate (already enforced by the DB&#039;s unique index), covering CE and PE for both near-week and near-month tenors</div></div><div class="ex-refs">Pins claims: U3, U4, U11</div><textarea class="ex-note" name="exnote-E1" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-example" data-id="E2" data-example="Given a single day&#039;s near-week CE series (WeekCe) that rises from 0% to +40% by 11:30 IST then falls back to +5% by close; When the crest-detection step runs on that (smoothed) series; Then it reports one crest at 11:30 with peak +40%, and a post-crest decay of 35 percentage points into the close, tagged to that trading date"><div class="ex-head"><span class="badge kind-example">E2 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> a single day&#039;s near-week CE series (WeekCe) that rises from 0% to +40% by 11:30 IST then falls back to +5% by close</div><div><span class="gwt-k">When</span> the crest-detection step runs on that (smoothed) series</div><div><span class="gwt-k">Then</span> it reports one crest at 11:30 with peak +40%, and a post-crest decay of 35 percentage points into the close, tagged to that trading date</div></div><div class="ex-refs">Pins claims: U2, U4</div><textarea class="ex-note" name="exnote-E2" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-example" data-id="E3" data-example="Given the decay-shape feature computed for every archived day so far (≈8 trading days); When the analysis tries to report a hit-rate for &#039;does post-crest CE decay predict a down move&#039;; Then the report explicitly states the sample size (≈8 days) is too small for a confident conclusion, rather than presenting a percentage as if it were reliable"><div class="ex-head"><span class="badge kind-example">E3 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> the decay-shape feature computed for every archived day so far (≈8 trading days)</div><div><span class="gwt-k">When</span> the analysis tries to report a hit-rate for &#039;does post-crest CE decay predict a down move&#039;</div><div><span class="gwt-k">Then</span> the report explicitly states the sample size (≈8 days) is too small for a confident conclusion, rather than presenting a percentage as if it were reliable</div></div><div class="ex-refs">Pins claims: U5</div><textarea class="ex-note" name="exnote-E3" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-counter" data-id="E4" data-example="Given the same ≈8 days of archived data; When the analysis is asked to produce a recommendation; Then it must NOT silently recommend changing SignalEngine&#039;s live delta-skew weights or Compose()&#039;s BiasScore blend based on that sample alone"><div class="ex-head"><span class="badge kind-counter">E4 · must NOT happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> the same ≈8 days of archived data</div><div><span class="gwt-k">When</span> the analysis is asked to produce a recommendation</div><div><span class="gwt-k">Then</span> it must NOT silently recommend changing SignalEngine&#039;s live delta-skew weights or Compose()&#039;s BiasScore blend based on that sample alone</div></div><div class="ex-refs">Pins claims: U5, U9</div><textarea class="ex-note" name="exnote-E4" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-example" data-id="E5" data-example="Given a decay-based signal validated on enough data, with the operator choosing &#039;blend into BiasScore&#039; as the feedback destination; When it is wired in; Then it appears as one more weighted line in ChainAnalysisService.Compose()&#039;s drivers list, contributing to BiasScore exactly like PCR/OI-flow/skew do today — not as a separate always-on override"><div class="ex-head"><span class="badge kind-example">E5 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> a decay-based signal validated on enough data, with the operator choosing &#039;blend into BiasScore&#039; as the feedback destination</div><div><span class="gwt-k">When</span> it is wired in</div><div><span class="gwt-k">Then</span> it appears as one more weighted line in ChainAnalysisService.Compose()&#039;s drivers list, contributing to BiasScore exactly like PCR/OI-flow/skew do today — not as a separate always-on override</div></div><div class="ex-refs">Pins claims: U6, U10</div><textarea class="ex-note" name="exnote-E5" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-example" data-id="E6" data-example="Given the operator instead chooses &#039;hard entry gate&#039; as the feedback destination; When SignalEngine.GenerateCandidatesAsync runs during a pre-crest (unconfirmed) window; Then it delays or down-ranks new short-strangle candidates until the post-crest decay condition is met, analogous to how it already skews target delta by up to ±30% off BiasScore today"><div class="ex-head"><span class="badge kind-example">E6 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> the operator instead chooses &#039;hard entry gate&#039; as the feedback destination</div><div><span class="gwt-k">When</span> SignalEngine.GenerateCandidatesAsync runs during a pre-crest (unconfirmed) window</div><div><span class="gwt-k">Then</span> it delays or down-ranks new short-strangle candidates until the post-crest decay condition is met, analogous to how it already skews target delta by up to ±30% off BiasScore today</div></div><div class="ex-refs">Pins claims: U6, U10</div><textarea class="ex-note" name="exnote-E6" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-example" data-id="E7" data-example="Given a day where WeekCe and WeekPe both rise then decay roughly together, with neither side dominating; When the pattern classifier runs; Then it labels that day &#039;non-directional / theta-friendly&#039;, consistent with Compose()&#039;s existing &#039;both sides decaying — non-directional, a premium-seller&#039;s day&#039; driver text — not as a directional signal"><div class="ex-head"><span class="badge kind-example">E7 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> a day where WeekCe and WeekPe both rise then decay roughly together, with neither side dominating</div><div><span class="gwt-k">When</span> the pattern classifier runs</div><div><span class="gwt-k">Then</span> it labels that day &#039;non-directional / theta-friendly&#039;, consistent with Compose()&#039;s existing &#039;both sides decaying — non-directional, a premium-seller&#039;s day&#039; driver text — not as a directional signal</div></div><div class="ex-refs">Pins claims: U2, U6</div><textarea class="ex-note" name="exnote-E7" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-counter" data-id="E8" data-example="Given the VegaFlowPoint.Spot values recorded at each intraday tick; When the analysis computes a &#039;forward return&#039; outcome; Then it must NOT reuse the same tick&#039;s Spot as both the predictor snapshot and the outcome — it needs a genuinely later timestamp (later same day, or a following trading day) as the outcome, or the reported &#039;edge&#039; is just self-correlation"><div class="ex-head"><span class="badge kind-counter">E8 · must NOT happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> the VegaFlowPoint.Spot values recorded at each intraday tick</div><div><span class="gwt-k">When</span> the analysis computes a &#039;forward return&#039; outcome</div><div><span class="gwt-k">Then</span> it must NOT reuse the same tick&#039;s Spot as both the predictor snapshot and the outcome — it needs a genuinely later timestamp (later same day, or a following trading day) as the outcome, or the reported &#039;edge&#039; is just self-correlation</div></div><div class="ex-refs">Pins claims: U8, U12</div><textarea class="ex-note" name="exnote-E8" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+      </section>
+
+      <section id="s5">
+        <h2>5 · Understanding Checklist — Confirm, Correct, or Fork Each Claim</h2>
+        <div class="card">
+          <p class="u-hint">
+            Each row is one claim I hold about your concept or your code. Mark it
+            ✓ correct, ≈ partly right, or ✗ wrong (and pick the right answer or
+            leave a note). Some rows are <strong>forks</strong> — I read them more
+            than one way, so choose the intended reading. Rows flagged
+            <strong>high stakes</strong> matter most: confirm those first. If I
+            missed something entirely, add it with the button below the table.
+          </p>
+          <div class="table-wrap">
+            <table id="u-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Area</th>
+                  <th>What I Understand</th>
+                  <th>Source</th>
+                  <th>Confidence</th>
+                  <th>Your Verdict</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-id="U1" data-statement="Which stored data is the &#039;post-crest database&#039; you mean?" data-fork="true" data-priority="high"><td>U1</td><td>Concept</td><td class="u-statement"><div>Which stored data is the &#039;post-crest database&#039; you mean?</div><div class="u-evidence">📎 backend/src/ThetaDesk.Domain/Entities/Entities.cs:137-150,205-212</div><div class="u-impact">⚠ If wrong: Picking the wrong table means the whole analysis answers a different question than intended.</div><div class="fork-hint">I can read this more than one way — pick the intended one:</div><div class="priority-flag">⚠ high stakes · confirm first</div></td><td><span class="badge src-inferred">inferred</span></td><td><span class="badge conf-medium">medium</span></td><td class="u-verdict u-fork"><label class="fork-opt"><input type="radio" name="fork-U1" value="0"><span>VegaFlowDailySnapshots only — market-wide, all strikes&#039; Σ-vega for CE/PE, near-week and near-month, one permanent row per trading day since 2026-07-02</span></label><label class="fork-opt"><input type="radio" name="fork-U1" value="1"><span>GreeksSnapshot only — per-position Vega, recorded only while the fund actually holds a trade (much sparser, biased to entered positions)</span></label><label class="fork-opt"><input type="radio" name="fork-U1" value="2"><span>Both, joined — market-wide decay pattern cross-referenced against the fund&#039;s own position-level decay and realised P&amp;L</span></label><label class="fork-opt fork-neither"><input type="radio" name="fork-U1" value="neither"><span>neither — I'll explain</span></label><textarea class="u-note" name="note-U1" rows="2" placeholder="The right reading is…" hidden></textarea></td></tr>
+<tr data-id="U2" data-statement="What does &#039;decay&#039; mean in this analysis?" data-fork="true" data-priority="high"><td>U2</td><td>Concept</td><td class="u-statement"><div>What does &#039;decay&#039; mean in this analysis?</div><div class="u-impact">⚠ If wrong: Determines the entire feature set and labels the analysis is built around — the wrong definition produces an unusable result even if the code runs correctly.</div><div class="fork-hint">I can read this more than one way — pick the intended one:</div><div class="priority-flag">⚠ high stakes · confirm first</div></td><td><span class="badge src-inferred">inferred</span></td><td><span class="badge conf-low">low</span></td><td class="u-verdict u-fork"><label class="fork-opt"><input type="radio" name="fork-U2" value="0"><span>Intraday: the fall of today&#039;s CE/PE vega-change% after its own peak, within the same trading day (a same-day &#039;crest → decay&#039; shape)</span></label><label class="fork-opt"><input type="radio" name="fork-U2" value="1"><span>Multi-day: how one day&#039;s crest height/timing relates to spot movement on a later day</span></label><label class="fork-opt"><input type="radio" name="fork-U2" value="2"><span>Structural: vega&#039;s natural decline as DTE shrinks toward expiry (theta-of-vega), independent of any intraday crest</span></label><label class="fork-opt fork-neither"><input type="radio" name="fork-U2" value="neither"><span>neither — I'll explain</span></label><textarea class="u-note" name="note-U2" rows="2" placeholder="The right reading is…" hidden></textarea></td></tr>
+<tr data-id="U3" data-statement="VegaFlowDailySnapshot stores exactly one permanent row per trading day (unique index on TradingDate), archived once market close (15:30 IST) is reached, containing the full day&#039;s series as serialized JSON."><td>U3</td><td>Code</td><td class="u-statement"><div>VegaFlowDailySnapshot stores exactly one permanent row per trading day (unique index on TradingDate), archived once market close (15:30 IST) is reached, containing the full day&#039;s series as serialized JSON.</div><div class="u-evidence">📎 backend/src/ThetaDesk.Api/Services/ChainAnalysisService.cs:206-244; backend/src/ThetaDesk.Domain/Entities/Entities.cs:205-212</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U3" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U4" data-statement="Each point in that series is {AtUtc, WeekCe, WeekPe, MonthCe, MonthPe, Spot} — WeekCe/WeekPe/MonthCe/MonthPe are CE/PE Σ-vega %-change vs the day&#039;s morning capture, for the near-week and near-month expiries respectively — sampled ≥45s apart, 09:09–15:36 IST, weekdays only."><td>U4</td><td>Code</td><td class="u-statement"><div>Each point in that series is {AtUtc, WeekCe, WeekPe, MonthCe, MonthPe, Spot} — WeekCe/WeekPe/MonthCe/MonthPe are CE/PE Σ-vega %-change vs the day&#039;s morning capture, for the near-week and near-month expiries respectively — sampled ≥45s apart, 09:09–15:36 IST, weekdays only.</div><div class="u-evidence">📎 backend/src/ThetaDesk.Api/Services/ChainAnalysisService.cs:54,163-188</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U4" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U5" data-statement="Very little history exists yet: the VegaFlowDailySnapshot table was introduced by migration 20260702205705 (2026-07-02); as of today (2026-07-13) that&#039;s at most ~8 trading-day rows."><td>U5</td><td>Code</td><td class="u-statement"><div>Very little history exists yet: the VegaFlowDailySnapshot table was introduced by migration 20260702205705 (2026-07-02); as of today (2026-07-13) that&#039;s at most ~8 trading-day rows.</div><div class="u-evidence">📎 backend/src/ThetaDesk.Data/Migrations/20260702205705_VegaFlowDailySnapshot.cs</div><div class="u-impact">⚠ If wrong: Any &#039;pattern&#039; surfaced from the data available right now is a hypothesis on a handful of days, not a validated statistical edge.</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U5" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U6" data-statement="This same vega-change series already feeds a live BiasScore: Compose() blends it (weighted 0.6 near-week / 0.4 near-month) with PCR, OI order-flow, max pain, IV skew and wall migration, and SignalEngine already skews short-leg target deltas by up to ±30% off that score."><td>U6</td><td>Code</td><td class="u-statement"><div>This same vega-change series already feeds a live BiasScore: Compose() blends it (weighted 0.6 near-week / 0.4 near-month) with PCR, OI order-flow, max pain, IV skew and wall migration, and SignalEngine already skews short-leg target deltas by up to ±30% off that score.</div><div class="u-evidence">📎 backend/src/ThetaDesk.Api/Services/ChainAnalysisService.cs:520-545; backend/src/ThetaDesk.Api/Services/SignalEngine.cs:112-254,366-380</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U6" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U7" data-statement="The only &#039;pattern&#039; logic that exists today is a live, same-day opening-range breakout rule in the frontend (first-N-minutes&#039; CE/PE high/low band; a later close outside it triggers a sound alert) — not a backtested, cross-day statistical study."><td>U7</td><td>Code</td><td class="u-statement"><div>The only &#039;pattern&#039; logic that exists today is a live, same-day opening-range breakout rule in the frontend (first-N-minutes&#039; CE/PE high/low band; a later close outside it triggers a sound alert) — not a backtested, cross-day statistical study.</div><div class="u-evidence">📎 frontend/src/lib/vegaFlowRange.ts:1-49</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U7" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U8" data-statement="What outcome variable should the decay shape be correlated against to call it an &#039;edge&#039;?" data-fork="true" data-priority="high"><td>U8</td><td>Change</td><td class="u-statement"><div>What outcome variable should the decay shape be correlated against to call it an &#039;edge&#039;?</div><div class="u-impact">⚠ If wrong: Different outcome choices produce different, non-comparable analyses; picking one late means redoing the mining pass.</div><div class="fork-hint">I can read this more than one way — pick the intended one:</div><div class="priority-flag">⚠ high stakes · confirm first</div></td><td><span class="badge src-inferred">inferred</span></td><td><span class="badge conf-low">low</span></td><td class="u-verdict u-fork"><label class="fork-opt"><input type="radio" name="fork-U8" value="0"><span>Forward NIFTY spot return over a fixed horizon (e.g. next 30/60 min, or next day&#039;s open)</span></label><label class="fork-opt"><input type="radio" name="fork-U8" value="1"><span>Next-day IV / vega crush — whether IV keeps falling, validating a &#039;sell now, decay is confirmed&#039; timing signal</span></label><label class="fork-opt"><input type="radio" name="fork-U8" value="2"><span>Hypothetical short-strangle P&amp;L if entered right after the crest is confirmed on that day</span></label><label class="fork-opt fork-neither"><input type="radio" name="fork-U8" value="neither"><span>neither — I'll explain</span></label><textarea class="u-note" name="note-U8" rows="2" placeholder="The right reading is…" hidden></textarea></td></tr>
+<tr data-id="U9" data-statement="This session&#039;s deliverable is a shared-understanding/design doc plus an analysis methodology — not the computed statistical result itself, since this environment has no live connection to the operator&#039;s running Postgres instance holding the real historical rows."><td>U9</td><td>Scope</td><td class="u-statement"><div>This session&#039;s deliverable is a shared-understanding/design doc plus an analysis methodology — not the computed statistical result itself, since this environment has no live connection to the operator&#039;s running Postgres instance holding the real historical rows.</div><div class="u-impact">⚠ If wrong: If the expectation was a literal number (&#039;CE decay &gt;30% predicts a down move 70% of the time&#039;) right now, this doc alone will not deliver that.</div></td><td><span class="badge src-inferred">inferred</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U9" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U10" data-statement="Where should a validated pattern plug back into the trading pipeline?" data-fork="true" data-priority="high"><td>U10</td><td>Change</td><td class="u-statement"><div>Where should a validated pattern plug back into the trading pipeline?</div><div class="u-impact">⚠ If wrong: Each destination requires different code and different risk review before it can touch live sizing.</div><div class="fork-hint">I can read this more than one way — pick the intended one:</div><div class="priority-flag">⚠ high stakes · confirm first</div></td><td><span class="badge src-inferred">inferred</span></td><td><span class="badge conf-low">low</span></td><td class="u-verdict u-fork"><label class="fork-opt"><input type="radio" name="fork-U10" value="0"><span>New weighted driver blended into the existing BiasScore/Drivers list in Compose() — same mechanism as today&#039;s other drivers</span></label><label class="fork-opt"><input type="radio" name="fork-U10" value="1"><span>A separate operator-facing advisory note (like SellerPlaybook text) shown but not scored into BiasScore</span></label><label class="fork-opt"><input type="radio" name="fork-U10" value="2"><span>A hard entry-timing gate in SignalEngine.GenerateCandidatesAsync (e.g. delay/down-rank candidates until post-crest decay confirms)</span></label><label class="fork-opt fork-neither"><input type="radio" name="fork-U10" value="neither"><span>neither — I'll explain</span></label><textarea class="u-note" name="note-U10" rows="2" placeholder="The right reading is…" hidden></textarea></td></tr>
+<tr data-id="U11" data-statement="GetVegaFlowSnapshotDatesAsync/GetVegaFlowSnapshotAsync already exist to fetch archived days one at a time (for the frontend&#039;s history picker); there is no existing method that loads every archived day at once for aggregate analysis — one would need to be added."><td>U11</td><td>Code</td><td class="u-statement"><div>GetVegaFlowSnapshotDatesAsync/GetVegaFlowSnapshotAsync already exist to fetch archived days one at a time (for the frontend&#039;s history picker); there is no existing method that loads every archived day at once for aggregate analysis — one would need to be added.</div><div class="u-evidence">📎 backend/src/ThetaDesk.Api/Services/ChainAnalysisService.cs:247-264</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><div class="correction-options"><span class="correction-label">Right answer:</span><button type="button" class="correction-opt" data-value="Add a GetAllVegaFlowSnapshotsAsync() method to ChainAnalysisService">Add a GetAllVegaFlowSnapshotsAsync() method to ChainAnalysisService</button><button type="button" class="correction-opt" data-value="Query VegaFlowDailySnapshots directly from a standalone analysis script via ThetaDeskDbContext">Query VegaFlowDailySnapshots directly from a standalone analysis script via ThetaDeskDbContext</button><button type="button" class="correction-opt" data-value="Export PointsJson rows to CSV/Parquet once and analyse offline">Export PointsJson rows to CSV/Parquet once and analyse offline</button></div><textarea class="u-note" name="note-U11" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U12" data-statement="VegaFlowPoint.Spot is the live NIFTY spot read at each intraday sample tick (not a morning-anchored value) — this is the field &#039;along with a nifty spot price&#039; in the request maps to."><td>U12</td><td>Code</td><td class="u-statement"><div>VegaFlowPoint.Spot is the live NIFTY spot read at each intraday sample tick (not a morning-anchored value) — this is the field &#039;along with a nifty spot price&#039; in the request maps to.</div><div class="u-evidence">📎 backend/src/ThetaDesk.Api/Services/ChainAnalysisService.cs:54,185-186</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U12" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="add-claim-row">
+            <button type="button" id="add-claim-btn" class="ghost-btn">
+              ＋ Add a claim I missed
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="s6">
+        <h2>6 · Tensions — What You Want vs. What the Code Allows</h2>
+        <p class="u-hint">
+          Reading the code, I found places where your intent and the current
+          reality pull against each other. Rather than silently pick for you, I'm
+          surfacing them: choose how each should resolve. An unresolved tension is
+          a likely source of a surprise later.
+        </p>
+        <div class="card tension-card" data-id="T1" data-summary="Find a statistically reliable pattern in vega decay right now from &#039;all the data&#039; I have. — vs — VegaFlowDailySnapshot has only existed since migration 20260702205705 (2026-07-02); as of today there are at most ~8 trading-day rows — far fewer than the 30+ independent samples per bucket typically needed before a pattern is trustworthy."><div class="tension-head"><span class="badge tension-badge">T1</span> Tension I found</div><div class="tension-cols"><div class="tension-col want"><h4>You want</h4><p>Find a statistically reliable pattern in vega decay right now from &#039;all the data&#039; I have.</p></div><div class="tension-col code"><h4>But the code…</h4><p>VegaFlowDailySnapshot has only existed since migration 20260702205705 (2026-07-02); as of today there are at most ~8 trading-day rows — far fewer than the 30+ independent samples per bucket typically needed before a pattern is trustworthy.</p><div class="u-evidence">📎 backend/src/ThetaDesk.Data/Migrations/20260702205705_VegaFlowDailySnapshot.cs</div></div></div><div class="tension-rec"><strong>My recommendation:</strong> Hypothesis-generation now; a formal validation gate (minimum sample size, out-of-sample check) before any BiasScore/SignalEngine change.</div><div class="tension-resolve"><span class="resolve-label">Your call:</span><label class="tension-opt"><input type="radio" name="tension-T1" value="0"><span>Treat this pass as hypothesis-generation only; re-validate weekly as more days accrue</span></label><label class="tension-opt"><input type="radio" name="tension-T1" value="1"><span>Also mine whatever intraday Redis series (chain:vegaflow:*) predates the Postgres archive, if still retained</span></label><label class="tension-opt"><input type="radio" name="tension-T1" value="2"><span>Wait several more weeks of trading days before drawing any conclusion</span></label><label class="tension-opt"><input type="radio" name="tension-T1" value="other"><span>other →</span></label><textarea class="t-note" name="tnote-T1" rows="2" placeholder="How we should resolve it…" hidden></textarea></div></div>
+<div class="card tension-card" data-id="T2" data-summary="Analyze the decay of vega in call and put together with spot to find one clean pattern. — vs — CeVegaChangePct/PeVegaChangePct already conflate two effects: (a) genuine directional buying/selling of that side, and (b) mechanical vega decay as strikes move away from ATM when spot drifts. Compose() already prefers vega flow over premium flow specifically because it carries less of this spot-mechanical noise — but not zero."><div class="tension-head"><span class="badge tension-badge">T2</span> Tension I found</div><div class="tension-cols"><div class="tension-col want"><h4>You want</h4><p>Analyze the decay of vega in call and put together with spot to find one clean pattern.</p></div><div class="tension-col code"><h4>But the code…</h4><p>CeVegaChangePct/PeVegaChangePct already conflate two effects: (a) genuine directional buying/selling of that side, and (b) mechanical vega decay as strikes move away from ATM when spot drifts. Compose() already prefers vega flow over premium flow specifically because it carries less of this spot-mechanical noise — but not zero.</p><div class="u-evidence">📎 backend/src/ThetaDesk.Api/Services/ChainAnalysisService.cs:44-50,524-533</div></div></div><div class="tension-rec"><strong>My recommendation:</strong> Start with the existing %-change fields as-is; add normalisation only if a first-pass pattern looks too noisy to trust.</div><div class="tension-resolve"><span class="resolve-label">Your call:</span><label class="tension-opt"><input type="radio" name="tension-T2" value="0"><span>Use CeVegaChangePct/PeVegaChangePct as-is and accept the small mechanical component</span></label><label class="tension-opt"><input type="radio" name="tension-T2" value="1"><span>Also pull GreeksSnapshot&#039;s raw per-leg Vega to separate &#039;IV-demand&#039; decay from pure moneyness decay</span></label><label class="tension-opt"><input type="radio" name="tension-T2" value="2"><span>Normalise each day by its ATM IV level first, so a high-VIX day isn&#039;t compared directly against a calm day</span></label><label class="tension-opt"><input type="radio" name="tension-T2" value="other"><span>other →</span></label><textarea class="t-note" name="tnote-T2" rows="2" placeholder="How we should resolve it…" hidden></textarea></div></div>
+<div class="card tension-card" data-id="T3" data-summary="Use this pattern to improve my odds as a seller. — vs — The existing seller-facing feedback mechanism (BiasScore → SignalEngine&#039;s ±30% delta skew) is direction-only — it has no timing/entry-delay concept, so a &#039;wait until post-crest decay confirms&#039; pattern doesn&#039;t fit today&#039;s plug-in point without new code."><div class="tension-head"><span class="badge tension-badge">T3</span> Tension I found</div><div class="tension-cols"><div class="tension-col want"><h4>You want</h4><p>Use this pattern to improve my odds as a seller.</p></div><div class="tension-col code"><h4>But the code…</h4><p>The existing seller-facing feedback mechanism (BiasScore → SignalEngine&#039;s ±30% delta skew) is direction-only — it has no timing/entry-delay concept, so a &#039;wait until post-crest decay confirms&#039; pattern doesn&#039;t fit today&#039;s plug-in point without new code.</p><div class="u-evidence">📎 backend/src/ThetaDesk.Api/Services/SignalEngine.cs:112-254,366-380</div></div></div><div class="tension-rec"><strong>My recommendation:</strong> Advisory-only first — cheapest to ship, lets the operator sanity-check the pattern in live conditions before it touches automated sizing or timing.</div><div class="tension-resolve"><span class="resolve-label">Your call:</span><label class="tension-opt"><input type="radio" name="tension-T3" value="0"><span>Fold the finding into Compose() as one more direction-only driver — fits today&#039;s mechanism with no new plumbing</span></label><label class="tension-opt"><input type="radio" name="tension-T3" value="1"><span>Add a genuinely new timing gate to SignalEngine.GenerateCandidatesAsync</span></label><label class="tension-opt"><input type="radio" name="tension-T3" value="2"><span>Surface it as operator-facing advisory text only (like SellerPlaybook), leave automation for a later pass</span></label><label class="tension-opt"><input type="radio" name="tension-T3" value="other"><span>other →</span></label><textarea class="t-note" name="tnote-T3" rows="2" placeholder="How we should resolve it…" hidden></textarea></div></div>
+<div class="card tension-card" data-id="T4" data-summary="Analyze all of the data right now and tell me the pattern. — vs — This session has no live connection to the operator&#039;s actual Postgres instance — the analysis code/methodology can be designed and the schema is fully known, but the real historical rows can&#039;t be queried from here."><div class="tension-head"><span class="badge tension-badge">T4</span> Tension I found</div><div class="tension-cols"><div class="tension-col want"><h4>You want</h4><p>Analyze all of the data right now and tell me the pattern.</p></div><div class="tension-col code"><h4>But the code…</h4><p>This session has no live connection to the operator&#039;s actual Postgres instance — the analysis code/methodology can be designed and the schema is fully known, but the real historical rows can&#039;t be queried from here.</p></div></div><div class="tension-rec"><strong>My recommendation:</strong> Design the exact query/methodology now (Section 10); operator runs it against the live DB, or grants access next turn, to get the actual numbers.</div><div class="tension-resolve"><span class="resolve-label">Your call:</span><label class="tension-opt"><input type="radio" name="tension-T4" value="0"><span>Operator runs the analysis script/query this design produces against their own running Postgres, then shares results back for interpretation</span></label><label class="tension-opt"><input type="radio" name="tension-T4" value="1"><span>Grant this session direct DB access (connection string, or `docker compose up`) so the analysis can run live</span></label><label class="tension-opt"><input type="radio" name="tension-T4" value="2"><span>Treat this pass purely as design + methodology; defer execution entirely to a later session</span></label><label class="tension-opt"><input type="radio" name="tension-T4" value="other"><span>other →</span></label><textarea class="t-note" name="tnote-T4" rows="2" placeholder="How we should resolve it…" hidden></textarea></div></div>
+      </section>
+
+      <section id="s7">
+        <h2>7 · Scope Boundaries</h2>
+        <div class='card'><h3>In scope</h3><ul><li>Reading and aggregating every archived <code>VegaFlowDailySnapshots</code> row (a new load-all-days query — none exists today, per U11)</li><li>Defining 'crest' and 'decay' precisely enough to extract per-day features (peak time, peak height, decay depth, decay slope, per side, per tenor)</li><li>Choosing and computing one forward outcome variable to correlate against (OQ1)</li><li>Producing a quantified report (hit-rate/correlation) with an explicit sample-size caveat given the current ~8 days of history</li><li>Designing — but not yet building — how a validated finding would plug into <code>Compose()</code>, an advisory field, or a <code>SignalEngine</code> gate (U10)</li></ul><h3>Out of scope (this pass)</h3><ul><li>Actually executing the analysis against live data — this session has no Postgres connection to the operator's real rows (T4)</li><li>Changing <code>Compose()</code>'s driver weights or <code>SignalEngine</code>'s skew/candidate logic</li><li>Cross-referencing <code>GreeksSnapshot</code> (per-position) data — deferred to OQ3</li><li>Building a general backtesting framework for full strategy P&L</li><li>Any live/adaptive re-weighting or auto-retraining of the pattern over time</li><li><code>GreeksSnapshot</code> retention/purge policy — already the subject of a separate in-flight arch doc (<code>arch-vega-snapshot-retention.html</code>)</li></ul></div>
+      </section>
+
+      <section id="s8">
+        <h2>8 · Open Questions</h2>
+        <div class="card">
+          <p class="u-hint">Answers typed here are included in the copied review.</p>
+          <div class="table-wrap">
+            <table id="oq-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Question</th>
+                  <th>Why it Matters</th>
+                  <th>Proposed Default</th>
+                  <th>Status</th>
+                  <th>Your Answer</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-id="OQ1"><td>OQ1</td><td>What forward horizon/outcome defines an &#039;edge&#039; for this analysis?</td><td>Directly determines what the mining pass measures — see U8 and the fork&#039;s three readings.</td><td>Start with next trading-day open-to-close NIFTY return — simplest, least sensitive to same-day noise, and easy to validate.</td><td>Open</td><td><textarea class="oq-answer" name="answer-OQ1" rows="2" placeholder="Type your answer…"></textarea></td></tr>
+<tr data-id="OQ2"><td>OQ2</td><td>What&#039;s the minimum sample size before a finding is trusted enough to act on?</td><td>With only ~8 archived trading days today (T1), an early &#039;pattern&#039; is very likely noise.</td><td>Don&#039;t treat any finding as tradeable until at least 30 archived trading days exist; re-run the mining pass weekly until then.</td><td>Open</td><td><textarea class="oq-answer" name="answer-OQ2" rows="2" placeholder="Type your answer…"></textarea></td></tr>
+<tr data-id="OQ3"><td>OQ3</td><td>Should GreeksSnapshot (the fund&#039;s own position-level Vega/PnL) be joined into this analysis, or should the first pass stay market-data-only?</td><td>Ties to the U1 fork — GreeksSnapshot only exists for days the fund actually held a position, which is a much sparser and self-selected sample than the full market-wide VegaFlowDailySnapshots archive.</td><td>Market-data-only (VegaFlowDailySnapshots) for the first pass; add GreeksSnapshot cross-referencing later once a market-wide pattern is validated.</td><td>Open</td><td><textarea class="oq-answer" name="answer-OQ3" rows="2" placeholder="Type your answer…"></textarea></td></tr>
+<tr data-id="OQ4"><td>OQ4</td><td>Where should the analysis tooling itself live — a one-off script run manually by the operator, or a proper endpoint/admin view in ThetaDesk.Api?</td><td>Affects how much code this actually requires and how repeatable the analysis is as new days accrue.</td><td>One-off script first (fastest way to test a hypothesis); promote to an endpoint only once a pattern survives validation and needs to run repeatedly.</td><td>Open</td><td><textarea class="oq-answer" name="answer-OQ4" rows="2" placeholder="Type your answer…"></textarea></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="s9">
+        <h2>9 · Risks &amp; Sharp Edges</h2>
+        <table class='table'><thead><tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr></thead><tbody><tr><td>Pattern found is overfit to a handful of days (T1, U5)</td><td>High</td><td>High</td><td>Explicit sample-size caveat in every report; hard gate (OQ2) before any live wiring</td></tr><tr><td>Naive peak-finding on a noisy, ≥45s-sampled series mistakes sensor noise for a crest (U2, U4)</td><td>Medium</td><td>Medium</td><td>Smooth (rolling median) before peak detection; require minimum prominence</td></tr><tr><td>New decay-based driver double-counts the existing vega-flow driver already in <code>Compose()</code> (U6, T3)</td><td>Medium</td><td>Medium</td><td>Design the new driver to capture timing/shape, orthogonal to the existing level/direction driver</td></tr><tr><td>Conflating same-day 'crest→decay' with structural theta-of-vega decay (U2 fork)</td><td>Medium</td><td>High</td><td>Pin the exact definition via E2/E7 before writing any extraction code</td></tr><tr><td>Self-correlation: using the same tick as predictor and outcome inflates apparent edge (E8)</td><td>Low</td><td>High</td><td>Enforce a genuinely later timestamp for the outcome variable</td></tr><tr><td>No live DB access this session means findings can't be verified today (T4)</td><td>High</td><td>Medium</td><td>Ship the methodology now; operator runs it against their real Postgres and reports back</td></tr></tbody></table>
+      </section>
+
+      <section id="s10">
+        <h2>10 · Implementation Sketch (Non-Binding)</h2>
+        <div class='card'><p><em>Non-binding — for orientation only.</em></p><ol><li>Add a <code>GetAllVegaFlowSnapshotsAsync()</code>-style query (or a standalone script against <code>ThetaDeskDbContext</code>) that loads every archived <code>VegaFlowDailySnapshot</code>, deserialising <code>PointsJson</code> per day.</li><li>Per day, per tenor (week/month), per side (CE/PE): smooth the series and locate the crest (time, height) and the subsequent decay (depth, slope, duration into close).</li><li>Join each day's decay features against the chosen forward outcome (OQ1) — e.g. next trading day's open-to-close NIFTY return.</li><li>Bucket days by decay-shape features and compute hit-rate / average forward move per bucket, alongside the raw sample count per bucket.</li><li>Report the findings — numbers and caveats, not a code change — for the operator to review before any follow-up arch doc proposes wiring a validated finding into <code>Compose()</code>, an advisory field, or <code>SignalEngine</code>.</li></ol></div>
+      </section>
+    </main>
+
+    <div
+      id="sync-widget"
+      data-doc="Vega-Decay Pattern → Seller&#039;s Edge"
+      data-version="v1"
+      data-status="DRAFT"
+    >
+      <div class="sync-title">Understanding sync</div>
+      <div class="sync-counts">
+        <span id="sync-confirmed">0</span> agreed ·
+        <span id="sync-flagged">0</span> to fix ·
+        <span id="sync-pending">0</span> pending
+      </div>
+      <div class="sync-bar"><div id="sync-bar-fill"></div></div>
+      <div id="sync-gate" class="sync-gate">Review the claims above</div>
+      <button type="button" id="copy-review-btn" class="copy-qa-btn">
+        📋 Copy review for the AI
+      </button>
+    </div>
+
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "default",
+        securityLevel: "loose",
+      });
+    </script>
+
+    <script>
+      const toc = document.getElementById("toc");
+      const sections = document.querySelectorAll('section[id^="s"]');
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const id = entry.target.id;
+              const link = toc.querySelector(`a[href="#${id}"]`);
+              toc
+                .querySelectorAll("a")
+                .forEach((a) => a.classList.remove("active"));
+              if (link) link.classList.add("active");
+            }
+          });
+        },
+        { threshold: 0.3, rootMargin: "-50% 0px -50% 0px" },
+      );
+
+      sections.forEach((section) => observer.observe(section));
+
+      toc.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          const target = document.querySelector(link.getAttribute("href"));
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      });
+    </script>
+
+    <script>
+      document.querySelectorAll("table").forEach((table) => {
+        if (table.closest(".table-wrap")) return;
+        const wrap = document.createElement("div");
+        wrap.className = "table-wrap";
+        table.parentNode.insertBefore(wrap, table);
+        wrap.appendChild(table);
+      });
+    </script>
+
+    <script>
+      (function () {
+        const backdrop = document.createElement("div");
+        backdrop.className = "diagram-backdrop";
+        document.body.appendChild(backdrop);
+
+        let activeCard = null;
+
+        function minimize(card) {
+          card.classList.remove("diagram-maximized");
+          const btn = card.querySelector(".diagram-toggle-btn");
+          if (btn) {
+            btn.textContent = "⛶";
+            btn.title = "Maximize diagram";
+          }
+          backdrop.classList.remove("active");
+          document.body.classList.remove("diagram-lock");
+          activeCard = null;
+        }
+
+        function maximize(card) {
+          if (activeCard && activeCard !== card) minimize(activeCard);
+          card.classList.add("diagram-maximized");
+          const btn = card.querySelector(".diagram-toggle-btn");
+          if (btn) {
+            btn.textContent = "✕";
+            btn.title = "Minimize diagram";
+          }
+          backdrop.classList.add("active");
+          document.body.classList.add("diagram-lock");
+          activeCard = card;
+        }
+
+        document.querySelectorAll("div.mermaid").forEach((diagram) => {
+          let card = diagram.closest(".mermaid-card");
+          if (!card) {
+            card = document.createElement("div");
+            card.className = "mermaid-card";
+            diagram.parentNode.insertBefore(card, diagram);
+            card.appendChild(diagram);
+          }
+          if (card.querySelector(".diagram-toggle-btn")) return;
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "diagram-toggle-btn";
+          btn.textContent = "⛶";
+          btn.title = "Maximize diagram";
+          btn.addEventListener("click", () => {
+            if (card.classList.contains("diagram-maximized")) {
+              minimize(card);
+            } else {
+              maximize(card);
+            }
+          });
+          card.appendChild(btn);
+        });
+
+        backdrop.addEventListener("click", () => {
+          if (activeCard) minimize(activeCard);
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && activeCard) minimize(activeCard);
+        });
+      })();
+    </script>
+
+    <script>
+      // Co-authoring engine: verdicts, forks, structured corrections, added
+      // claims, tension resolutions, example sign-off, recall, live sync, and
+      // the review export. All state persists per browser keyed by doc+version.
+      (function () {
+        const widget = document.getElementById("sync-widget");
+        if (!widget) return;
+
+        const docName = widget.dataset.doc || "";
+        const docVersion = widget.dataset.version || "";
+        const docStatus = widget.dataset.status || "";
+        const storeKey = "arch-review:" + docName + ":" + docVersion;
+
+        const state = load();
+        state.recall = state.recall || "";
+        state.claims = state.claims || {};
+        state.added = Array.isArray(state.added) ? state.added : [];
+        state.tensions = state.tensions || {};
+        state.examples = state.examples || {};
+        state.answers = state.answers || {};
+
+        function load() {
+          try {
+            return JSON.parse(localStorage.getItem(storeKey)) || {};
+          } catch (e) {
+            return {};
+          }
+        }
+        function save() {
+          try {
+            localStorage.setItem(storeKey, JSON.stringify(state));
+          } catch (e) {
+            /* private mode: review still works, just not persisted */
+          }
+        }
+        const txt = (el) => (el ? el.value.trim() : "");
+        const setText = (sel, val) => {
+          const el = document.querySelector(sel);
+          if (el) el.textContent = val;
+        };
+
+        // ---------- Recall / success statement ----------
+        const recall = document.getElementById("recall-box");
+        if (recall) {
+          recall.value = state.recall;
+          recall.addEventListener("input", () => {
+            state.recall = recall.value;
+            save();
+          });
+        }
+
+        // ---------- Understanding rows ----------
+        const uTableBody = document.querySelector("#u-table tbody");
+        const claimRows = () =>
+          Array.from(document.querySelectorAll("#u-table tbody tr[data-id]"));
+
+        function rowState(row) {
+          if (row.dataset.fork === "true") {
+            const c = row.dataset.forkChoice;
+            if (c && c !== "neither") return "agreed";
+            if (c === "neither") return "flagged";
+            return "pending";
+          }
+          const v = row.dataset.verdict;
+          if (v === "yes") return "agreed";
+          if (v === "no" || v === "partly") return "flagged";
+          return "pending";
+        }
+        function paintRow(row) {
+          row.dataset.state = rowState(row);
+        }
+
+        function applyVerdict(row, verdict) {
+          if (verdict) row.dataset.verdict = verdict;
+          else row.removeAttribute("data-verdict");
+          row.querySelectorAll(".verdict-btn").forEach((b) => {
+            b.classList.toggle("selected", b.dataset.verdict === verdict);
+          });
+          const correction = row.querySelector(".u-correction");
+          if (correction)
+            correction.hidden = !(verdict === "no" || verdict === "partly");
+          paintRow(row);
+        }
+
+        function wireClaim(row) {
+          const id = row.dataset.id;
+          const note = row.querySelector(".u-note");
+
+          if (row.dataset.fork === "true") {
+            row.querySelectorAll('input[type="radio"]').forEach((radio) => {
+              radio.addEventListener("change", () => {
+                row.dataset.forkChoice = radio.value;
+                if (note) note.hidden = radio.value !== "neither";
+                state.claims[id] = { fork: radio.value, note: txt(note) };
+                paintRow(row);
+                save();
+                refresh();
+              });
+            });
+            if (note)
+              note.addEventListener("input", () => {
+                state.claims[id] = {
+                  fork: row.dataset.forkChoice || "",
+                  note: note.value,
+                };
+                save();
+              });
+            const s = state.claims[id];
+            if (s && s.fork) {
+              row.querySelectorAll('input[type="radio"]').forEach((r) => {
+                if (r.value === s.fork) r.checked = true;
+              });
+              row.dataset.forkChoice = s.fork;
+              if (note) {
+                note.hidden = s.fork !== "neither";
+                note.value = s.note || "";
+              }
+            }
+            paintRow(row);
+            return;
+          }
+
+          row.querySelectorAll(".verdict-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const next =
+                row.dataset.verdict === btn.dataset.verdict
+                  ? ""
+                  : btn.dataset.verdict;
+              applyVerdict(row, next);
+              const cur = state.claims[id] || {};
+              state.claims[id] = {
+                verdict: next,
+                note: txt(note),
+                correction: cur.correction || "",
+              };
+              save();
+              refresh();
+            });
+          });
+          row.querySelectorAll(".correction-opt").forEach((opt) => {
+            opt.addEventListener("click", () => {
+              const cur = state.claims[id] || {};
+              const nextVal =
+                cur.correction === opt.dataset.value ? "" : opt.dataset.value;
+              row.querySelectorAll(".correction-opt").forEach((o) =>
+                o.classList.toggle("selected", o.dataset.value === nextVal),
+              );
+              state.claims[id] = {
+                verdict: row.dataset.verdict || "",
+                note: txt(note),
+                correction: nextVal,
+              };
+              save();
+            });
+          });
+          if (note)
+            note.addEventListener("input", () => {
+              const cur = state.claims[id] || {};
+              state.claims[id] = {
+                verdict: row.dataset.verdict || "",
+                note: note.value,
+                correction: cur.correction || "",
+              };
+              save();
+            });
+
+          const s = state.claims[id];
+          if (s) {
+            if (note) note.value = s.note || "";
+            if (s.correction)
+              row.querySelectorAll(".correction-opt").forEach((o) =>
+                o.classList.toggle("selected", o.dataset.value === s.correction),
+              );
+            applyVerdict(row, s.verdict || "");
+          }
+        }
+
+        // ---------- Added claims (human authors what the AI missed) ----------
+        function renderAdded(item) {
+          const tr = document.createElement("tr");
+          tr.className = "added-row";
+          tr.dataset.addedId = item.id;
+          tr.innerHTML =
+            `<td>${item.id}</td><td>you</td>` +
+            `<td class="u-statement"><textarea class="added-text" name="added-${item.id}" placeholder="The thing I missed…"></textarea></td>` +
+            `<td><span class="badge src-user">you said</span></td>` +
+            `<td><span class="badge conf-high">high</span></td>` +
+            `<td><button type="button" class="remove-added">✕ remove</button></td>`;
+          uTableBody.appendChild(tr);
+          const ta = tr.querySelector(".added-text");
+          ta.value = item.text || "";
+          ta.addEventListener("input", () => {
+            item.text = ta.value;
+            save();
+          });
+          tr.querySelector(".remove-added").addEventListener("click", () => {
+            state.added = state.added.filter((x) => x.id !== item.id);
+            tr.remove();
+            save();
+            refresh();
+          });
+        }
+        const addBtn = document.getElementById("add-claim-btn");
+        if (addBtn) {
+          state.added.forEach(renderAdded);
+          addBtn.addEventListener("click", () => {
+            let n = state.added.length + 1;
+            let id = "A" + n;
+            while (state.added.some((x) => x.id === id)) id = "A" + ++n;
+            const item = { id: id, text: "" };
+            state.added.push(item);
+            renderAdded(item);
+            save();
+          });
+        }
+
+        // ---------- Tensions ----------
+        const tensionCards = Array.from(
+          document.querySelectorAll(".tension-card[data-id]"),
+        );
+        tensionCards.forEach((card) => {
+          const id = card.dataset.id;
+          const note = card.querySelector(".t-note");
+          card.querySelectorAll('input[type="radio"]').forEach((radio) => {
+            radio.addEventListener("change", () => {
+              card.dataset.choice = radio.value;
+              if (note) note.hidden = radio.value !== "other";
+              state.tensions[id] = { choice: radio.value, note: txt(note) };
+              save();
+              refresh();
+            });
+          });
+          if (note)
+            note.addEventListener("input", () => {
+              state.tensions[id] = {
+                choice: card.dataset.choice || "",
+                note: note.value,
+              };
+              save();
+            });
+          const s = state.tensions[id];
+          if (s && s.choice) {
+            card.querySelectorAll('input[type="radio"]').forEach((r) => {
+              if (r.value === s.choice) r.checked = true;
+            });
+            card.dataset.choice = s.choice;
+            if (note) {
+              note.hidden = s.choice !== "other";
+              note.value = s.note || "";
+            }
+          }
+        });
+
+        // ---------- Acceptance examples ----------
+        const exCards = Array.from(
+          document.querySelectorAll(".example-card[data-id]"),
+        );
+        exCards.forEach((card) => {
+          const id = card.dataset.id;
+          const note = card.querySelector(".ex-note");
+          card.querySelectorAll(".verdict-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const next =
+                card.dataset.verdict === btn.dataset.verdict
+                  ? ""
+                  : btn.dataset.verdict;
+              if (next) card.dataset.verdict = next;
+              else card.removeAttribute("data-verdict");
+              card.querySelectorAll(".verdict-btn").forEach((b) =>
+                b.classList.toggle("selected", b.dataset.verdict === next),
+              );
+              if (note) note.hidden = next !== "no";
+              state.examples[id] = { verdict: next, note: txt(note) };
+              save();
+              refresh();
+            });
+          });
+          if (note)
+            note.addEventListener("input", () => {
+              state.examples[id] = {
+                verdict: card.dataset.verdict || "",
+                note: note.value,
+              };
+              save();
+            });
+          const s = state.examples[id];
+          if (s) {
+            if (s.verdict) card.dataset.verdict = s.verdict;
+            card.querySelectorAll(".verdict-btn").forEach((b) =>
+              b.classList.toggle("selected", b.dataset.verdict === s.verdict),
+            );
+            if (note) {
+              note.hidden = s.verdict !== "no";
+              note.value = s.note || "";
+            }
+          }
+        });
+
+        // ---------- Open questions ----------
+        const oqRows = Array.from(
+          document.querySelectorAll("#oq-table tbody tr[data-id]"),
+        );
+        oqRows.forEach((row) => {
+          const id = row.dataset.id;
+          const ta = row.querySelector("textarea");
+          if (!ta) return;
+          if (state.answers[id]) ta.value = state.answers[id];
+          ta.addEventListener("input", () => {
+            state.answers[id] = ta.value;
+            save();
+          });
+        });
+
+        // ---------- Live sync tally + approval gate ----------
+        function refresh() {
+          let agreed = 0;
+          let flagged = 0;
+          let pending = 0;
+          let highPending = 0;
+
+          claimRows().forEach((row) => {
+            paintRow(row);
+            const s = rowState(row);
+            if (s === "agreed") agreed++;
+            else if (s === "flagged") flagged++;
+            else {
+              pending++;
+              if (row.dataset.priority === "high") highPending++;
+            }
+          });
+          tensionCards.forEach((card) => {
+            if (card.dataset.choice) agreed++;
+            else {
+              pending++;
+              highPending++;
+            }
+          });
+          exCards.forEach((card) => {
+            const v = card.dataset.verdict;
+            if (v === "yes") agreed++;
+            else if (v === "no") flagged++;
+            else pending++;
+          });
+
+          const total = agreed + flagged + pending;
+          setText("#sync-confirmed", agreed);
+          setText("#sync-flagged", flagged);
+          setText("#sync-pending", pending);
+          document.getElementById("sync-bar-fill").style.width = total
+            ? (agreed / total) * 100 + "%"
+            : "0%";
+
+          const gate = document.getElementById("sync-gate");
+          if (highPending > 0) {
+            gate.textContent =
+              "⚠ " +
+              highPending +
+              " high-stakes item" +
+              (highPending > 1 ? "s" : "") +
+              " need a decision";
+            gate.className = "sync-gate warn";
+          } else if (pending > 0) {
+            gate.textContent =
+              pending + " item" + (pending > 1 ? "s" : "") + " left to review";
+            gate.className = "sync-gate";
+          } else if (flagged > 0) {
+            gate.textContent =
+              "✓ all reviewed · " + flagged + " to revise next pass";
+            gate.className = "sync-gate";
+          } else {
+            gate.textContent = "✓ fully synced — ready to approve";
+            gate.className = "sync-gate ok";
+          }
+        }
+
+        claimRows().forEach(wireClaim);
+        refresh();
+
+        // ---------- Review export (the manifest carried to the next pass) ----------
+        function labelFor(input) {
+          const label = input && input.closest("label");
+          const span = label && label.querySelector("span");
+          return span ? span.textContent.trim() : "";
+        }
+        function checkedLabel(container, name) {
+          const input = container.querySelector(
+            'input[name="' + name + '"]:checked',
+          );
+          return input ? labelFor(input) : "";
+        }
+
+        function buildReview() {
+          const confirmed = [];
+          const forks = [];
+          const corrections = [];
+          const unreviewed = [];
+
+          claimRows().forEach((row) => {
+            const id = row.dataset.id;
+            const stmt = row.dataset.statement || "";
+            if (row.dataset.fork === "true") {
+              const c = row.dataset.forkChoice;
+              if (!c) {
+                unreviewed.push(id);
+              } else if (c === "neither") {
+                const note = txt(row.querySelector(".u-note"));
+                corrections.push(
+                  `${id} [FORK: none fit] "${stmt}"\n  Right reading: ${note || "(no note)"}`,
+                );
+              } else {
+                forks.push(`${id} → "${checkedLabel(row, "fork-" + id)}"`);
+                confirmed.push(id);
+              }
+              return;
+            }
+            const v = row.dataset.verdict;
+            const cur = state.claims[id] || {};
+            if (v === "yes") {
+              confirmed.push(id);
+            } else if (v === "no" || v === "partly") {
+              const tag = v === "no" ? "WRONG" : "PARTLY";
+              const fix = cur.correction
+                ? `right answer: "${cur.correction}"  (structured)`
+                : `note: ${txt(row.querySelector(".u-note")) || "(no note)"}  (prose)`;
+              corrections.push(`${id} [${tag}] "${stmt}"\n  ${fix}`);
+            } else {
+              unreviewed.push(id);
+            }
+          });
+
+          const added = state.added
+            .filter((a) => (a.text || "").trim())
+            .map((a) => `+${a.id}: ${a.text.trim()}`);
+
+          const tensions = tensionCards.map((card) => {
+            const id = card.dataset.id;
+            const c = card.dataset.choice;
+            if (!c) return `${id}: UNRESOLVED`;
+            if (c === "other")
+              return `${id} → other: ${txt(card.querySelector(".t-note")) || "(no note)"}`;
+            return `${id} → ${checkedLabel(card, "tension-" + id)}`;
+          });
+
+          const exApproved = [];
+          const exRejected = [];
+          const exUnreviewed = [];
+          exCards.forEach((card) => {
+            const id = card.dataset.id;
+            const v = card.dataset.verdict;
+            if (v === "yes") exApproved.push(id);
+            else if (v === "no")
+              exRejected.push(
+                `${id}: ${card.dataset.example}\n  should be: ${txt(card.querySelector(".ex-note")) || "(no note)"}`,
+              );
+            else exUnreviewed.push(id);
+          });
+
+          const answers = oqRows.map((row) => {
+            const q = row.children[1] ? row.children[1].textContent.trim() : "";
+            const a = txt(row.querySelector("textarea"));
+            return `${row.dataset.id}: ${q}\n→ ${a || "(no answer)"}`;
+          });
+
+          return [
+            `ARCH REVIEW — ${docName} ${docVersion} [${docStatus.toUpperCase()}]`,
+            "",
+            "YOUR SUCCESS STATEMENT (your words):",
+            state.recall.trim() || "(not provided)",
+            "(reconcile this against the AI Overview at the top of the doc)",
+            "",
+            `CONFIRMED CLAIMS: ${confirmed.join(", ") || "none"}`,
+            "",
+            forks.length ? "FORK CHOICES:\n" + forks.join("\n") : "FORK CHOICES: none",
+            "",
+            "CORRECTIONS (apply these):",
+            corrections.length ? corrections.join("\n") : "none",
+            "",
+            added.length
+              ? "NEW CLAIMS YOU ADDED:\n" + added.join("\n")
+              : "NEW CLAIMS YOU ADDED: none",
+            "",
+            "TENSIONS:",
+            tensions.length ? tensions.join("\n") : "none",
+            "",
+            "ACCEPTANCE EXAMPLES:",
+            `  APPROVED (binding): ${exApproved.join(", ") || "none"}`,
+            exRejected.length
+              ? "  REJECTED:\n    " + exRejected.join("\n    ")
+              : "  REJECTED: none",
+            `  UNREVIEWED: ${exUnreviewed.join(", ") || "none"}`,
+            "",
+            "OPEN QUESTION ANSWERS:",
+            answers.length ? answers.join("\n") : "none",
+            "",
+            `UNREVIEWED CLAIMS: ${unreviewed.join(", ") || "none"}`,
+            "",
+            "NEXT: reconcile my overview with your success statement; apply the corrections, fork choices, new claims, tension resolutions, and rejected-example fixes to the arch JSON; bump the version and add a revision-log row; regenerate with arch-inject.js. On APPROVED, the CONFIRMED claims + APPROVED examples are the acceptance criteria the implementation must satisfy — carry them into /feature as verification anchors.",
+          ].join("\n");
+        }
+
+        document
+          .getElementById("copy-review-btn")
+          .addEventListener("click", (e) => {
+            const btn = e.currentTarget;
+            navigator.clipboard.writeText(buildReview()).then(() => {
+              const original = btn.textContent;
+              btn.textContent = "✓ Copied";
+              btn.classList.add("copied");
+              setTimeout(() => {
+                btn.textContent = original;
+                btn.classList.remove("copied");
+              }, 1500);
+            });
+          });
+      })();
+    </script>
+  </body>
+</html>

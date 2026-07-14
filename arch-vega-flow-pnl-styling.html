@@ -1,0 +1,1778 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shared Understanding — Vega Flow — Emphasized Unrealized P&amp;L</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --accent: #2563eb;
+        --bg: #f8fafc;
+        --card-bg: #ffffff;
+        --text: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --status-draft: #64748b;
+        --status-review: #f59e0b;
+        --status-approved: #16a34a;
+        --wrong: #e11d48;
+        --warn: #b45309;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.6;
+        color: var(--text);
+        background: var(--bg);
+        min-height: 100vh;
+      }
+
+      nav#toc {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 240px;
+        height: 100vh;
+        background: var(--card-bg);
+        border-right: 1px solid var(--border);
+        overflow-y: auto;
+        z-index: 100;
+        padding: 2rem 1rem;
+      }
+
+      nav#toc .brand {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: var(--accent);
+        margin-bottom: 2rem;
+        display: block;
+      }
+
+      nav#toc a {
+        display: block;
+        padding: 0.5rem 0.75rem;
+        margin: 0.5rem 0;
+        color: var(--text);
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+      }
+
+      nav#toc a:hover {
+        background: var(--bg);
+        color: var(--accent);
+      }
+
+      nav#toc a.active {
+        background: var(--accent);
+        color: white;
+        font-weight: 500;
+      }
+
+      main {
+        margin-left: 240px;
+        padding: 3rem 2rem;
+        margin-right: auto;
+      }
+
+      header {
+        margin-bottom: 3rem;
+      }
+
+      header h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+      }
+
+      header .subtitle {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+
+      .status-banner {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .status-banner.draft {
+        background: rgba(100, 116, 139, 0.1);
+        color: var(--status-draft);
+        border-left: 4px solid var(--status-draft);
+      }
+
+      .status-banner.review {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--status-review);
+        border-left: 4px solid var(--status-review);
+      }
+
+      .status-banner.approved {
+        background: rgba(22, 163, 74, 0.1);
+        color: var(--status-approved);
+        border-left: 4px solid var(--status-approved);
+      }
+
+      section {
+        margin-bottom: 3rem;
+        scroll-margin-top: 2rem;
+      }
+
+      section h2 {
+        font-size: 1.4rem;
+        margin-bottom: 1.5rem;
+        padding-left: 1rem;
+        border-left: 4px solid var(--accent);
+        color: var(--text);
+      }
+
+      .card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      .card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        color: var(--text);
+      }
+
+      .card h4 {
+        font-size: 1rem;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        color: var(--accent);
+      }
+
+      .card h4:first-child {
+        margin-top: 0;
+      }
+
+      .card p {
+        margin-bottom: 1rem;
+        color: var(--text);
+      }
+
+      .card ul,
+      .card ol {
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .card li {
+        margin-bottom: 0.5rem;
+        color: var(--text);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1rem;
+      }
+
+      table thead {
+        background: var(--bg);
+        border-bottom: 2px solid var(--border);
+      }
+
+      table th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text);
+        font-size: 0.9rem;
+        white-space: nowrap;
+      }
+
+      table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+        font-size: 0.95rem;
+        white-space: nowrap;
+      }
+
+      table tbody tr:nth-child(even) {
+        background: rgba(100, 116, 139, 0.02);
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        margin-bottom: 1rem;
+      }
+
+      /* Interactive tables hold sentences, not identifiers: let them wrap. */
+      #u-table td,
+      #oq-table td {
+        white-space: normal;
+        vertical-align: top;
+      }
+
+      #u-table .u-statement {
+        min-width: 320px;
+      }
+
+      #u-table .u-verdict {
+        min-width: 210px;
+      }
+
+      #oq-table td:nth-child(2) {
+        min-width: 260px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 0.15rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .badge.src-user {
+        background: rgba(37, 99, 235, 0.12);
+        color: var(--accent);
+      }
+      .badge.src-code {
+        background: rgba(22, 163, 74, 0.12);
+        color: var(--status-approved);
+      }
+      .badge.src-inferred {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warn);
+      }
+      .badge.src-assumed {
+        background: rgba(225, 29, 72, 0.12);
+        color: #be123c;
+      }
+      .badge.conf-high {
+        background: rgba(22, 163, 74, 0.12);
+        color: var(--status-approved);
+      }
+      .badge.conf-medium {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warn);
+      }
+      .badge.conf-low {
+        background: rgba(225, 29, 72, 0.12);
+        color: #be123c;
+      }
+      .badge.kind-example {
+        background: rgba(22, 163, 74, 0.12);
+        color: var(--status-approved);
+      }
+      .badge.kind-counter {
+        background: rgba(225, 29, 72, 0.12);
+        color: #be123c;
+      }
+      .badge.tension-badge {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warn);
+      }
+
+      .u-evidence {
+        margin-top: 0.35rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .u-impact {
+        margin-top: 0.25rem;
+        font-size: 0.8rem;
+        color: var(--warn);
+      }
+
+      .priority-flag {
+        margin-top: 0.4rem;
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #be123c;
+        background: rgba(225, 29, 72, 0.09);
+        border: 1px solid rgba(225, 29, 72, 0.25);
+        border-radius: 999px;
+        padding: 0.1rem 0.55rem;
+      }
+
+      .fork-hint {
+        margin-top: 0.4rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--accent);
+      }
+
+      .u-hint {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+      }
+
+      /* Verdict buttons (claims + examples) */
+      .verdict-group {
+        display: flex;
+        gap: 0.35rem;
+        margin-bottom: 0.4rem;
+      }
+
+      .verdict-btn {
+        width: 2rem;
+        height: 2rem;
+        border: 1px solid var(--border);
+        background: var(--card-bg);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        line-height: 1;
+        color: var(--text-muted);
+        transition: all 0.15s;
+      }
+
+      .verdict-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .verdict-btn.v-yes.selected {
+        background: var(--status-approved);
+        border-color: var(--status-approved);
+        color: white;
+      }
+      .verdict-btn.v-partly.selected {
+        background: var(--status-review);
+        border-color: var(--status-review);
+        color: white;
+      }
+      .verdict-btn.v-no.selected {
+        background: var(--wrong);
+        border-color: var(--wrong);
+        color: white;
+      }
+
+      /* Row state colouring (agreed / flagged) for claims */
+      #u-table tbody tr[data-state="agreed"] {
+        background: rgba(22, 163, 74, 0.07);
+      }
+      #u-table tbody tr[data-state="flagged"] {
+        background: rgba(225, 29, 72, 0.07);
+      }
+      #u-table tbody tr[data-priority="high"] td:first-child {
+        box-shadow: inset 3px 0 0 #be123c;
+      }
+
+      /* Fork radio options */
+      .fork-opt,
+      .tension-opt {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.45rem;
+        font-size: 0.88rem;
+        padding: 0.3rem 0.4rem;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-bottom: 0.2rem;
+      }
+      .fork-opt:hover,
+      .tension-opt:hover {
+        background: var(--bg);
+      }
+      .fork-opt input,
+      .tension-opt input {
+        margin-top: 0.28rem;
+      }
+      .fork-neither span {
+        color: var(--text-muted);
+      }
+
+      /* Structured correction options */
+      .u-correction {
+        margin-top: 0.25rem;
+      }
+      .correction-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      }
+      .correction-label {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-right: 0.15rem;
+      }
+      .correction-opt {
+        border: 1px solid var(--border);
+        background: var(--card-bg);
+        border-radius: 6px;
+        padding: 0.25rem 0.6rem;
+        font-size: 0.82rem;
+        cursor: pointer;
+        color: var(--text);
+        transition: all 0.15s;
+      }
+      .correction-opt:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .correction-opt.selected {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+      }
+
+      /* Add-a-claim */
+      .add-claim-row {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 0.5rem;
+      }
+      .ghost-btn {
+        background: var(--card-bg);
+        border: 1px dashed var(--accent);
+        color: var(--accent);
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .ghost-btn:hover {
+        background: rgba(37, 99, 235, 0.06);
+      }
+      #u-table tbody tr.added-row {
+        background: rgba(37, 99, 235, 0.05);
+      }
+      textarea.added-text {
+        width: 100%;
+        min-width: 260px;
+        min-height: 2.5rem;
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.9rem;
+        color: var(--text);
+        resize: vertical;
+      }
+      .remove-added {
+        background: none;
+        border: none;
+        color: var(--wrong);
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+      .remove-added:hover {
+        text-decoration: underline;
+      }
+
+      /* Recall / success statement */
+      .recall-card {
+        border-left: 4px solid var(--status-review);
+        background: rgba(245, 158, 11, 0.05);
+      }
+      .recall-card h3 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      textarea#recall-box {
+        width: 100%;
+        min-height: 4rem;
+        padding: 0.6rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        color: var(--text);
+        resize: vertical;
+      }
+
+      /* Tensions */
+      .tension-card {
+        border-left: 4px solid var(--status-review);
+      }
+      .tension-head {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .tension-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      .tension-col {
+        padding: 0.85rem 1rem;
+        border-radius: 8px;
+        background: var(--bg);
+      }
+      .tension-col.want {
+        border-top: 3px solid var(--accent);
+      }
+      .tension-col.code {
+        border-top: 3px solid var(--wrong);
+      }
+      .tension-col h4 {
+        margin: 0 0 0.4rem 0;
+      }
+      .tension-col p {
+        margin: 0;
+        font-size: 0.92rem;
+      }
+      .tension-rec {
+        font-size: 0.9rem;
+        background: rgba(37, 99, 235, 0.05);
+        border-radius: 8px;
+        padding: 0.6rem 0.85rem;
+        margin-bottom: 1rem;
+      }
+      .tension-resolve {
+        border-top: 1px solid var(--border);
+        padding-top: 0.85rem;
+      }
+      .resolve-label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.88rem;
+        margin-bottom: 0.5rem;
+      }
+      .tension-card[data-choice] {
+        border-left-color: var(--status-approved);
+      }
+
+      /* Acceptance examples */
+      .example-card {
+        border-left: 4px solid var(--status-approved);
+      }
+      .example-card.ex-counter {
+        border-left-color: var(--wrong);
+      }
+      .ex-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.85rem;
+      }
+      .ex-verdict {
+        margin-bottom: 0;
+      }
+      .ex-gwt > div {
+        padding: 0.35rem 0;
+        font-size: 0.93rem;
+        border-bottom: 1px dashed var(--border);
+      }
+      .ex-gwt > div:last-child {
+        border-bottom: none;
+      }
+      .gwt-k {
+        display: inline-block;
+        width: 3.6rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .ex-refs {
+        margin-top: 0.5rem;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+      .example-card[data-verdict="yes"] {
+        background: rgba(22, 163, 74, 0.06);
+      }
+      .example-card[data-verdict="no"] {
+        background: rgba(225, 29, 72, 0.06);
+      }
+
+      .mermaid-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+        position: relative;
+      }
+
+      .mermaid {
+        display: flex;
+        justify-content: center;
+      }
+
+      .diagram-toggle-btn {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text-muted);
+        font-size: 1rem;
+        line-height: 1;
+        cursor: pointer;
+        z-index: 2;
+        transition: all 0.2s;
+      }
+
+      .diagram-toggle-btn:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      .diagram-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        z-index: 999;
+      }
+
+      .diagram-backdrop.active {
+        display: block;
+      }
+
+      body.diagram-lock {
+        overflow: hidden;
+      }
+
+      .mermaid-card.diagram-maximized {
+        position: fixed;
+        inset: 2rem;
+        z-index: 1000;
+        overflow: auto;
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+      }
+
+      .mermaid-card.diagram-maximized .mermaid {
+        width: 100%;
+        height: 100%;
+      }
+
+      .mermaid-card.diagram-maximized .mermaid svg {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+      }
+
+      pre,
+      code {
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-width: 100%;
+        font-family: "Courier New", Courier, monospace;
+      }
+
+      pre {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+        line-height: 1.4;
+      }
+
+      code {
+        background: rgba(100, 116, 139, 0.1);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        color: #e11d48;
+        font-size: 0.9rem;
+      }
+
+      pre code {
+        background: none;
+        padding: 0;
+        color: var(--text);
+      }
+
+      details {
+        margin-bottom: 1.5rem;
+      }
+
+      details summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--accent);
+        padding: 0.75rem;
+        user-select: none;
+        transition: all 0.2s;
+      }
+
+      details summary:hover {
+        background: var(--bg);
+        border-radius: 6px;
+      }
+
+      details[open] summary {
+        margin-bottom: 1rem;
+      }
+
+      details pre {
+        margin-top: 1rem;
+      }
+
+      .approval-gate {
+        background: rgba(22, 163, 74, 0.1);
+        border-left: 4px solid var(--status-approved);
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        color: var(--status-approved);
+        font-weight: 500;
+        margin-top: 2rem;
+      }
+
+      .ai-overview-card {
+        border-left: 4px solid var(--accent);
+        background: rgba(37, 99, 235, 0.04);
+      }
+
+      .copy-qa-btn {
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .copy-qa-btn:hover {
+        opacity: 0.9;
+      }
+      .copy-qa-btn.copied {
+        background: var(--status-approved);
+      }
+
+      textarea.oq-answer,
+      textarea.u-note,
+      textarea.t-note,
+      textarea.ex-note {
+        width: 100%;
+        min-width: 200px;
+        min-height: 3rem;
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.9rem;
+        color: var(--text);
+        resize: vertical;
+      }
+      textarea.u-note,
+      textarea.t-note,
+      textarea.ex-note {
+        min-width: 180px;
+        margin-top: 0.35rem;
+      }
+
+      #sync-widget {
+        position: fixed;
+        right: 1.25rem;
+        bottom: 1.25rem;
+        z-index: 500;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        padding: 0.9rem 1rem;
+        width: 250px;
+        font-size: 0.85rem;
+      }
+      #sync-widget .sync-title {
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+      }
+      #sync-widget .sync-counts {
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+      }
+      #sync-widget .sync-bar {
+        height: 6px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+      }
+      #sync-bar-fill {
+        height: 100%;
+        width: 0;
+        background: var(--status-approved);
+        transition: width 0.2s;
+      }
+      .sync-gate {
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+        color: var(--text-muted);
+      }
+      .sync-gate.warn {
+        color: #be123c;
+      }
+      .sync-gate.ok {
+        color: var(--status-approved);
+      }
+      #copy-review-btn {
+        width: 100%;
+      }
+
+      section,
+      .card {
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+
+      @media (max-width: 900px) {
+        nav#toc {
+          position: static;
+          width: 100%;
+          height: auto;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+          padding: 1rem;
+          margin-bottom: 1rem;
+        }
+        nav#toc .brand {
+          display: inline-block;
+          margin-right: 2rem;
+        }
+        nav#toc a {
+          display: inline-block;
+          margin: 0 0.5rem;
+          padding: 0.4rem 0.6rem;
+          font-size: 0.85rem;
+        }
+        main {
+          margin-left: 0;
+          padding: 2rem 1rem;
+        }
+        header h1 {
+          font-size: 1.5rem;
+        }
+        .tension-cols {
+          grid-template-columns: 1fr;
+        }
+        #sync-widget {
+          right: 0.75rem;
+          bottom: 0.75rem;
+          width: 210px;
+          padding: 0.7rem 0.8rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav id="toc">
+      <span class="brand">🧠 Understanding</span>
+      <a href="#s-overview">★ At a Glance</a>
+      <a href="#s0">0 · Document Control</a>
+      <a href="#s1">1 · The Concept</a>
+      <a href="#s2">2 · The Code Today</a>
+      <a href="#s3">3 · The Change</a>
+      <a href="#s4">4 · Acceptance Examples</a>
+      <a href="#s5">5 · Understanding Checklist</a>
+      <a href="#s6">6 · Tensions</a>
+      <a href="#s7">7 · Scope</a>
+      <a href="#s8">8 · Open Questions</a>
+      <a href="#s9">9 · Risks</a>
+      <a href="#s10">10 · Implementation Sketch</a>
+    </nav>
+
+    <main>
+      <header>
+        <h1>🧠 Shared Understanding — Vega Flow — Emphasized Unrealized P&amp;L</h1>
+        <p class="subtitle">Make the unrealized P&amp;L shown with the vega-flow chart bold, green when in profit / red when in loss, and larger. · React 19 · Vite · ChainAnalysisView · inline-style theme</p>
+      </header>
+
+      <section id="s-overview">
+        <h2>🤖 At a Glance — Do We Agree on the Goal?</h2>
+        <div class="card ai-overview-card">
+          <h3>My understanding of what you want</h3>
+          <p>You want the <strong>Unrealized P&amp;L</strong> shown with the vega-flow chart to be visually emphasized: <strong>bold 700</strong>, <strong>green when ≥ 0 / red when &lt; 0</strong> (where ₹0 reads as green), and <strong>larger at ~0.95rem</strong> instead of the current muted 0.78rem caption. In the code today that P&amp;L is portfolio-wide from <code>GET /portfolio/greeks</code>, rendered only in the <strong>maximized modal's subtitle</strong> (<code>ChainAnalysisView.tsx:233</code>) — the in-page card shows no P&amp;L. You approved adding the same styled value to the card header so it is visible without maximizing. The implementation splits the subtitle into a text prefix + a styled span, formats negatives as '−₹value' (not '₹-value'), and renders the same styled component in both the card header and modal. Chart geometry, series colors, and the backend are untouched.</p>
+        </div>
+        <div class="card recall-card">
+          <h3>✍️ Your turn — success in your own words</h3>
+          <p class="u-hint">
+            Before trusting my summary, write what a correct result looks like
+            to you, in a sentence or two. If your words and mine diverge, that
+            gap is the most important thing on this page. Your text is included
+            in the copied review so I can reconcile the two.
+          </p>
+          <textarea
+            id="recall-box"
+            placeholder="In my words, this is done when…"
+          ></textarea>
+        </div>
+      </section>
+
+      <section id="s0">
+        <h2>0 · Document Control</h2>
+        <div class="status-banner approved">
+          <strong>Status:</strong> APPROVED — READY FOR IMPLEMENTATION ·
+          <strong>Version:</strong> v2 ·
+          <strong>Last Updated:</strong> 2026-07-13 ·
+          <strong>Author:</strong> Claude Haiku 4.5
+        </div>
+
+        <div class="card">
+          <h3>Revision Log</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Version</th>
+                  <th>Date</th>
+                  <th>Summary of Changes</th>
+                  <th>Driven By</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>v1</td><td>2026-07-13</td><td>Initial draft: located the P&amp;L render site (modal subtitle only), proposed styled-span approach, raised placement and &#039;bigger&#039; forks.</td><td>First generation</td></tr>
+<tr><td>v2</td><td>2026-07-13</td><td>Applied user review: U2 fork resolved to text-only, T1 resolved to add P&amp;L to card header, OQ1 confirmed ₹0 as green, all examples approved.</td><td>Review reconciliation</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="approval-gate">
+          <strong>Approval Gate:</strong> Implementation begins only after every
+          high-stakes claim in Section 5 is verdicted, every tension is resolved,
+          the acceptance examples you approve are agreed as binding, and you flip
+          this document to APPROVED. Matching mental models is the deliverable
+          here; code comes later.
+        </div>
+      </section>
+
+      <section id="s1">
+        <h2>1 · The Concept, In My Own Words</h2>
+        <div class='card'><p><strong>The idea:</strong> the unrealized P&amp;L shown alongside the vega-flow chart is the single number that tells you, mid-session, whether the seller's book is working — yet it currently renders as 0.78rem muted-slate caption text, visually identical to the chart's explanatory subtitle. You want it to behave like a P&amp;L readout: <strong>bold</strong>, <strong>green in profit / red in loss</strong>, and <strong>bigger at 0.95rem</strong>, so a glance answers 'am I up or down?' without hunting for a small grey number.</p><p><strong>The problem avoided:</strong> misreading or overlooking the desk's live P&amp;L while watching vega flow, which is exactly the moment (an opening-range breach, a bias shift) when that number matters most.</p></div>
+      </section>
+
+      <section id="s2">
+        <h2>2 · What the Code Does Today</h2>
+        <div class='card'><p>On the Option Chain page, <code>ChainAnalysisView</code> fetches the portfolio Greeks every 60s and passes <code>portfolioGreeks?.unrealisedPnl</code> into <code>VegaFlowSection</code> (<code>ChainAnalysisView.tsx:88-95, 146</code>). That section renders the chart in one of two shells:</p><ul><li><strong>Normal (in-page card):</strong> a <code>SectionLabel</code> ('Vega flow — Δ Σν vs morning…'), the vega-read note, a ⛶ Maximize button, and the three-lane SVG chart. <em>The P&amp;L is not shown here (will be added per T1).</em></li><li><strong>Maximized (modal):</strong> the same chart inside <code>Modal</code>, whose <code>subtitle</code> is a string: <code>'Δ Σν vs morning, near week · Unrealized P&amp;L: ₹12,340'</code> (<code>ChainAnalysisView.tsx:233-235</code>). <code>Modal.tsx:60</code> renders that subtitle at <code>0.78rem</code> in <code>color.textSub</code> (muted slate) — no bolding, no profit/loss color.</li></ul><p>The theme already ships <code>pnlColor(n) → n ≥ 0 ? '#16a34a' : '#dc2626'</code> (<code>theme.ts:79</code>), used by the four Σ-change rows in the expiry panels, and the chart's series palette deliberately reserves green/red for P&amp;L semantics (comment at <code>ChainAnalysisView.tsx:173</code>).</p><div class='mermaid'>flowchart LR
+  A["GET /portfolio/greeks\n(60s refetch)"] --> B["ChainAnalysisView\nportfolioGreeks.unrealisedPnl"]
+  B --> C["VegaFlowSection"]
+  C -->|not maximized| D["Card: label + note + SVG\n(no P&L shown today)"]
+  C -->|maximized| E["Modal subtitle: text + value\n0.78rem muted"]</div></div>
+      </section>
+
+      <section id="s3">
+        <h2>3 · The Change — Before → After</h2>
+        <div class='card'><table><thead><tr><th></th><th>Before</th><th>After</th></tr></thead><tbody><tr><td><strong>Maximized modal subtitle</strong></td><td>Flat string, 0.78rem, muted: 'Δ Σν vs morning, near week · Unrealized P&L: ₹12,340'</td><td>Prefix text (muted) + styled span — <strong>bold 700</strong>, <span style='color:#16a34a'>green</span> when ≥ 0 / <span style='color:#dc2626'>red</span> when &lt; 0, 0.95rem mono; '−₹value' format for negatives</td></tr><tr><td><strong>In-page card header</strong></td><td>No P&L</td><td>Same styled P&L value shown next to the vega-read note, visible without Maximize</td></tr><tr><td><strong>₹0 rendering</strong></td><td>N/A</td><td>Green (pnlColor logic unchanged)</td></tr><tr><td><strong>Negative formatting</strong></td><td>'₹-8,500'</td><td>'−₹8,500' (minus before rupee)</td></tr><tr><td><strong>Chart SVG, series colors, backend</strong></td><td colspan='2' style='text-align:center'>unchanged</td></tr></tbody></table><div class='mermaid'>flowchart LR
+  A["unrealisedPnl"] --> B{"defined?"}
+  B -->|no| C["plain subtitle,\nexactly as today"]
+  B -->|yes| D{"pnlColor(value)"}
+  D -->|"value >= 0"| E["bold green ₹value\n0.95rem mono"]
+  D -->|"value < 0"| F["bold red −₹value\n0.95rem mono"]</div></div>
+      </section>
+
+      <section id="s4">
+        <h2>4 · Acceptance Examples — Sign Off the Behaviour</h2>
+        <p class="u-hint">
+          Each example is a concrete input → outcome I believe you want (or, for a
+          counter-example, one that must NOT happen). Mark ✓ if that's the behaviour
+          you expect, ✗ if the outcome is wrong. The ones you ✓ become the binding
+          acceptance criteria the implementation is graded against — this is where
+          understanding turns into something testable.
+        </p>
+        <div class="card example-card ex-example" data-id="E1" data-example="Given Open positions with portfolio unrealisedPnl = +12,340 and the vega-flow chart maximized; When The modal header renders; Then The subtitle shows &#039;Δ Σν vs morning, near week · Unrealized P&amp;L: &#039; in muted text, followed by &#039;₹12,340&#039; in bold green (#16a34a) at 0.95rem mono font."><div class="ex-head"><span class="badge kind-example">E1 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> Open positions with portfolio unrealisedPnl = +12,340 and the vega-flow chart maximized</div><div><span class="gwt-k">When</span> The modal header renders</div><div><span class="gwt-k">Then</span> The subtitle shows &#039;Δ Σν vs morning, near week · Unrealized P&amp;L: &#039; in muted text, followed by &#039;₹12,340&#039; in bold green (#16a34a) at 0.95rem mono font.</div></div><div class="ex-refs">Pins claims: U1, U6, U7, U8</div><textarea class="ex-note" name="exnote-E1" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-example" data-id="E2" data-example="Given Portfolio unrealisedPnl = −8,500 and the chart maximized; When The modal header renders; Then The value reads &#039;−₹8,500&#039; (minus sign before the ₹ symbol) in bold red (#dc2626) at 0.95rem."><div class="ex-head"><span class="badge kind-example">E2 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> Portfolio unrealisedPnl = −8,500 and the chart maximized</div><div><span class="gwt-k">When</span> The modal header renders</div><div><span class="gwt-k">Then</span> The value reads &#039;−₹8,500&#039; (minus sign before the ₹ symbol) in bold red (#dc2626) at 0.95rem.</div></div><div class="ex-refs">Pins claims: U1, U6, U12</div><textarea class="ex-note" name="exnote-E2" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-example" data-id="E3" data-example="Given Open positions, chart NOT maximized, portfolio unrealisedPnl = +5,600; When The Option Chain page renders the vega-flow card; Then The card header shows the vega-read note, then &#039;· Unrealized P&amp;L: ₹5,600&#039; in the same bold green 0.95rem styling — visible without clicking Maximize."><div class="ex-head"><span class="badge kind-example">E3 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> Open positions, chart NOT maximized, portfolio unrealisedPnl = +5,600</div><div><span class="gwt-k">When</span> The Option Chain page renders the vega-flow card</div><div><span class="gwt-k">Then</span> The card header shows the vega-read note, then &#039;· Unrealized P&amp;L: ₹5,600&#039; in the same bold green 0.95rem styling — visible without clicking Maximize.</div></div><div class="ex-refs">Pins claims: U3, T1</div><textarea class="ex-note" name="exnote-E3" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-example" data-id="E4" data-example="Given The portfolio-greeks query has not resolved (or failed) so unrealisedPnl is undefined; When The chart is maximized; Then The subtitle shows only &#039;Δ Σν vs morning, near week (leading indicator)&#039; — no &#039;₹NaN&#039;, no empty &#039;Unrealized P&amp;L:&#039; label, no crash."><div class="ex-head"><span class="badge kind-example">E4 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> The portfolio-greeks query has not resolved (or failed) so unrealisedPnl is undefined</div><div><span class="gwt-k">When</span> The chart is maximized</div><div><span class="gwt-k">Then</span> The subtitle shows only &#039;Δ Σν vs morning, near week (leading indicator)&#039; — no &#039;₹NaN&#039;, no empty &#039;Unrealized P&amp;L:&#039; label, no crash.</div></div><div class="ex-refs">Pins claims: U9</div><textarea class="ex-note" name="exnote-E4" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-counter" data-id="E5" data-example="Given The styling change is applied; When The vega-flow chart SVG renders (any state); Then The CE line does NOT turn green and the PE line does NOT turn red — series colors stay CE=blue/PE=amber, and the SVG lanes, bands, sizes and sound alert behave exactly as before."><div class="ex-head"><span class="badge kind-counter">E5 · must NOT happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> The styling change is applied</div><div><span class="gwt-k">When</span> The vega-flow chart SVG renders (any state)</div><div><span class="gwt-k">Then</span> The CE line does NOT turn green and the PE line does NOT turn red — series colors stay CE=blue/PE=amber, and the SVG lanes, bands, sizes and sound alert behave exactly as before.</div></div><div class="ex-refs">Pins claims: U10</div><textarea class="ex-note" name="exnote-E5" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-counter" data-id="E6" data-example="Given unrealisedPnl = +12,340; When The styled P&amp;L renders; Then The rest of the subtitle (&#039;Δ Σν vs morning, near week&#039;) does NOT grow or turn green — only the ₹ value gets bold/color/size."><div class="ex-head"><span class="badge kind-counter">E6 · must NOT happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> unrealisedPnl = +12,340</div><div><span class="gwt-k">When</span> The styled P&amp;L renders</div><div><span class="gwt-k">Then</span> The rest of the subtitle (&#039;Δ Σν vs morning, near week&#039;) does NOT grow or turn green — only the ₹ value gets bold/color/size.</div></div><div class="ex-refs">Pins claims: U7</div><textarea class="ex-note" name="exnote-E6" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+      </section>
+
+      <section id="s5">
+        <h2>5 · Understanding Checklist — Confirm, Correct, or Fork Each Claim</h2>
+        <div class="card">
+          <p class="u-hint">
+            Each row is one claim I hold about your concept or your code. Mark it
+            ✓ correct, ≈ partly right, or ✗ wrong (and pick the right answer or
+            leave a note). Some rows are <strong>forks</strong> — I read them more
+            than one way, so choose the intended reading. Rows flagged
+            <strong>high stakes</strong> matter most: confirm those first. If I
+            missed something entirely, add it with the button below the table.
+          </p>
+          <div class="table-wrap">
+            <table id="u-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Area</th>
+                  <th>What I Understand</th>
+                  <th>Source</th>
+                  <th>Confidence</th>
+                  <th>Your Verdict</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-id="U1" data-statement="You want the unrealized P&amp;L figure shown with the vega-flow chart to be visually emphasized: bold weight, green when in profit, red when in loss, and a larger font than it has now."><td>U1</td><td>Concept</td><td class="u-statement"><div>You want the unrealized P&amp;L figure shown with the vega-flow chart to be visually emphasized: bold weight, green when in profit, red when in loss, and a larger font than it has now.</div><div class="u-impact">⚠ If wrong: This is the whole feature; everything else is placement and sizing detail.</div></td><td><span class="badge src-user">you said</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U1" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U2" data-statement="&#039;Bigger&#039; means the P&amp;L text itself, not the chart; the chart already has a ⛶ Maximize button for size control."><td>U2</td><td>Concept</td><td class="u-statement"><div>&#039;Bigger&#039; means the P&amp;L text itself, not the chart; the chart already has a ⛶ Maximize button for size control.</div><div class="u-impact">⚠ If wrong: Scope is confined to styling the value span, not chart geometry.</div></td><td><span class="badge src-user">you said</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U2" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U3" data-statement="The P&amp;L only exists in the maximized modal&#039;s subtitle; the normal in-page vega-flow card never displays it (unless T1 adds it)."><td>U3</td><td>Code</td><td class="u-statement"><div>The P&amp;L only exists in the maximized modal&#039;s subtitle; the normal in-page vega-flow card never displays it (unless T1 adds it).</div><div class="u-evidence">📎 frontend/src/components/ChainAnalysisView.tsx:233-235 (subtitle built only for &lt;Modal&gt;), 219 (card path shows SectionLabel without P&amp;L)</div><div class="u-impact">⚠ If wrong: If you thought you were seeing P&amp;L on the in-page card, we are styling the wrong surface — see tension T1.</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U3" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U4" data-statement="The figure is the portfolio-wide unrealized P&amp;L from GET /portfolio/greeks (refetched every 60s), not a P&amp;L derived from the vega-flow series itself."><td>U4</td><td>Code</td><td class="u-statement"><div>The figure is the portfolio-wide unrealized P&amp;L from GET /portfolio/greeks (refetched every 60s), not a P&amp;L derived from the vega-flow series itself.</div><div class="u-evidence">📎 frontend/src/api/client.ts:44 (PortfolioGreeks.unrealisedPnl), ChainAnalysisView.tsx:88-95</div><div class="u-impact">⚠ If wrong: The number is portfolio-wide; if you expected a chart-specific P&amp;L, the underlying data is wrong.</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U4" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U5" data-statement="Modal&#039;s subtitle prop is typed ReactNode, so a styled fragment (text + span) can be passed without changing Modal.tsx."><td>U5</td><td>Code</td><td class="u-statement"><div>Modal&#039;s subtitle prop is typed ReactNode, so a styled fragment (text + span) can be passed without changing Modal.tsx.</div><div class="u-evidence">📎 frontend/src/ui/Modal.tsx:6, 60</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U5" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U6" data-statement="The theme already has pnlColor(n) returning green (#16a34a) for n ≥ 0 and red (#dc2626) for n &lt; 0, and it is already imported in ChainAnalysisView."><td>U6</td><td>Code</td><td class="u-statement"><div>The theme already has pnlColor(n) returning green (#16a34a) for n ≥ 0 and red (#dc2626) for n &lt; 0, and it is already imported in ChainAnalysisView.</div><div class="u-evidence">📎 frontend/src/theme.ts:79; ChainAnalysisView.tsx:6</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U6" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U7" data-statement="Only the numeric value (₹ amount) gets the bold/color/size treatment; the &#039;Unrealized P&amp;L:&#039; label and the &#039;Δ Σν vs morning…&#039; prefix keep their current muted 0.78rem styling."><td>U7</td><td>Change</td><td class="u-statement"><div>Only the numeric value (₹ amount) gets the bold/color/size treatment; the &#039;Unrealized P&amp;L:&#039; label and the &#039;Δ Σν vs morning…&#039; prefix keep their current muted 0.78rem styling.</div></td><td><span class="badge src-user">you said</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U7" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U8" data-statement="The P&amp;L value renders at 0.95rem bold in the mono font (up from 0.78rem regular), noticeably larger than the surrounding text but not competing with the 1.05rem modal title."><td>U8</td><td>Change</td><td class="u-statement"><div>The P&amp;L value renders at 0.95rem bold in the mono font (up from 0.78rem regular), noticeably larger than the surrounding text but not competing with the 1.05rem modal title.</div></td><td><span class="badge src-user">you said</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U8" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U9" data-statement="When unrealisedPnl is undefined (greeks query not yet resolved or failed), the subtitle falls back to the plain leading-indicator text exactly as today — no placeholder, no crash."><td>U9</td><td>Change</td><td class="u-statement"><div>When unrealisedPnl is undefined (greeks query not yet resolved or failed), the subtitle falls back to the plain leading-indicator text exactly as today — no placeholder, no crash.</div><div class="u-evidence">📎 ChainAnalysisView.tsx:233-235 (existing undefined branch)</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U9" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U10" data-statement="Chart internals are untouched: the three-lane SVG geometry, CE/PE/spot series colors (blue/amber, reserved from green/red by design), opening-range bands, and the sound alert all stay exactly as they are."><td>U10</td><td>Scope</td><td class="u-statement"><div>Chart internals are untouched: the three-lane SVG geometry, CE/PE/spot series colors (blue/amber, reserved from green/red by design), opening-range bands, and the sound alert all stay exactly as they are.</div><div class="u-evidence">📎 ChainAnalysisView.tsx:168-179 (comment: green/red reserved for P&amp;L semantics)</div><div class="u-impact">⚠ If wrong: Coloring the P&amp;L green/red is consistent with the chart&#039;s stated color contract, so no palette conflict is introduced.</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U10" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U11" data-statement="No backend, API, or data changes: this is a frontend-only styling change confined to ChainAnalysisView.tsx (and only Modal.tsx if a fork forces it, which none does)."><td>U11</td><td>Scope</td><td class="u-statement"><div>No backend, API, or data changes: this is a frontend-only styling change confined to ChainAnalysisView.tsx (and only Modal.tsx if a fork forces it, which none does).</div></td><td><span class="badge src-inferred">inferred</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U11" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U12" data-statement="A negative value renders as &#039;−₹8,500&#039; (minus sign before the rupee symbol), not &#039;₹-8,500&#039;."><td>U12</td><td>Change</td><td class="u-statement"><div>A negative value renders as &#039;−₹8,500&#039; (minus sign before the rupee symbol), not &#039;₹-8,500&#039;.</div><div class="u-impact">⚠ If wrong: Cosmetic; red color already carries the loss signal, but proper sign placement matches accounting conventions.</div></td><td><span class="badge src-user">you said</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U12" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="add-claim-row">
+            <button type="button" id="add-claim-btn" class="ghost-btn">
+              ＋ Add a claim I missed
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="s6">
+        <h2>6 · Tensions — What You Want vs. What the Code Allows</h2>
+        <p class="u-hint">
+          Reading the code, I found places where your intent and the current
+          reality pull against each other. Rather than silently pick for you, I'm
+          surfacing them: choose how each should resolve. An unresolved tension is
+          a likely source of a surprise later.
+        </p>
+        <div class="card tension-card" data-id="T1" data-summary="The P&amp;L &#039;in the vega flow diagram&#039; on the Option Chain page to be emphasized — implying you see it as part of the chart you look at on the page. — vs — The in-page vega-flow card shows no P&amp;L at all; the figure only appears after clicking ⛶ Maximize, as muted header text in the modal."><div class="tension-head"><span class="badge tension-badge">T1</span> Tension I found</div><div class="tension-cols"><div class="tension-col want"><h4>You want</h4><p>The P&amp;L &#039;in the vega flow diagram&#039; on the Option Chain page to be emphasized — implying you see it as part of the chart you look at on the page.</p></div><div class="tension-col code"><h4>But the code…</h4><p>The in-page vega-flow card shows no P&amp;L at all; the figure only appears after clicking ⛶ Maximize, as muted header text in the modal.</p><div class="u-evidence">📎 frontend/src/components/ChainAnalysisView.tsx:217-235</div></div></div><div class="tension-rec"><strong>My recommendation:</strong> Add to card header — you said &#039;in option chain page&#039;, and a P&amp;L you only see after maximizing is easy to miss; the card header row has room on the right.</div><div class="tension-resolve"><span class="resolve-label">Your call:</span><label class="tension-opt"><input type="radio" name="tension-T1" value="0"><span>Style it where it lives today: maximized modal subtitle only</span></label><label class="tension-opt"><input type="radio" name="tension-T1" value="1"><span>Also add the same styled P&amp;L to the in-page card header (next to the vega-read note), so it is visible without maximizing</span></label><label class="tension-opt"><input type="radio" name="tension-T1" value="2"><span>Render it inside the chart SVG as an overlay annotation</span></label><label class="tension-opt"><input type="radio" name="tension-T1" value="other"><span>other →</span></label><textarea class="t-note" name="tnote-T1" rows="2" placeholder="How we should resolve it…" hidden></textarea></div></div>
+      </section>
+
+      <section id="s7">
+        <h2>7 · Scope Boundaries</h2>
+        <div class='card'><p><strong>In scope</strong></p><ul><li>Styling the unrealized P&amp;L value shown with the vega-flow chart: weight, color via <code>pnlColor</code>, size 0.95rem.</li><li>Converting the modal <code>subtitle</code> from a flat string to a ReactNode fragment (text + span); Modal already accepts this.</li><li>Adding the same styled P&L to the in-page vega-flow card header (resolved T1 → option 2).</li><li>Fixing minus-sign position for negative values (₹-8,500 → −₹8,500).</li><li>Rendering the value as green for ₹0 (pnlColor behavior confirmed by OQ1).</li></ul><p><strong>Out of scope</strong></p><ul><li>Any change to the SVG chart: lanes, scales, series colors, opening-range bands, sound alert.</li><li>Other P&amp;L displays in the app (Positions view, portfolio tiles, NAV); other views unchanged (OQ2).</li><li>Backend / API / data model — <code>unrealisedPnl</code> consumed as-is.</li><li>Modal.tsx layout changes beyond passing a richer subtitle node.</li></ul></div>
+      </section>
+
+      <section id="s8">
+        <h2>8 · Open Questions</h2>
+        <div class="card">
+          <p class="u-hint">Answers typed here are included in the copied review.</p>
+          <div class="table-wrap">
+            <table id="oq-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Question</th>
+                  <th>Why it Matters</th>
+                  <th>Proposed Default</th>
+                  <th>Status</th>
+                  <th>Your Answer</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-id="OQ1"><td>OQ1</td><td>When unrealized P&amp;L is exactly ₹0, should it show green or a neutral color?</td><td>pnlColor() treats 0 as green today; if flat-at-zero reading as &#039;in profit&#039; bothers you, we add a neutral branch just for this display.</td><td>Green for ₹0 — pnlColor keeps its existing behavior; consistent with the four Σ-change rows that already use it.</td><td>Resolved-in-v2</td><td><textarea class="oq-answer" name="answer-OQ1" rows="2" placeholder="Type your answer…"></textarea></td></tr>
+<tr data-id="OQ2"><td>OQ2</td><td>Should the emphasized P&amp;L also appear anywhere else it is currently muted (e.g. if we later add it to the card per T1, should the Positions/Portfolio views change too)?</td><td>Keeps scope honest: this pass touches only the vega-flow surfaces, not every P&amp;L in the app.</td><td>No — only the vega-flow card/modal; other views unchanged.</td><td>Resolved-in-v2</td><td><textarea class="oq-answer" name="answer-OQ2" rows="2" placeholder="Type your answer…"></textarea></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="s9">
+        <h2>9 · Risks &amp; Sharp Edges</h2>
+        <div class='card'><table><thead><tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr></thead><tbody><tr><td>User meant 'the chart' not 'the text' for bigger (fork U2) — change lands on wrong element</td><td>Resolved</td><td>N/A</td><td>User confirmed: text only, not chart geometry</td></tr><tr><td>You expected the P&L on the in-page card, but it only exists in the modal (T1 / U3)</td><td>Resolved</td><td>N/A</td><td>T1 resolved to add it to the card header; visible without Maximize</td></tr><tr><td>A larger bold value wraps the modal header on narrow widths</td><td>Low</td><td>Low — cosmetic</td><td>Value span uses white-space:nowrap; header already flex-wraps</td></tr><tr><td>₹0 renders green and reads as 'profit'</td><td>Resolved</td><td>N/A</td><td>OQ1 confirmed: ₹0 stays green (pnlColor consistent)</td></tr></tbody></table></div>
+      </section>
+
+      <section id="s10">
+        <h2>10 · Implementation Sketch (Non-Binding)</h2>
+        <div class='card'><p><em>Approved and implemented.</em></p><ol><li>In <code>VegaFlowSection</code>, extract a <code>pnlValue</code> JSX element: <code>&lt;span style={{…}}&gt;</code> with the formatted value (bold 700, 0.95rem mono, pnlColor, −₹value format).</li><li>Replace the flat <code>subtitle</code> string with a fragment when defined: plain prefix text + the styled <code>pnlValue</code> span.</li><li>Render <code>pnlValue</code> in the card's header row (line 220 area) before the Maximize button, preceded by '· Unrealized P&L: '.</li><li>Preserve the undefined fallback: plain-string subtitle exactly as today.</li><li>Verify with <code>npm run lint</code> and live Option Chain view testing (profit, loss, no-greeks states).</li></ol></div>
+      </section>
+    </main>
+
+    <div
+      id="sync-widget"
+      data-doc="Vega Flow — Emphasized Unrealized P&amp;L"
+      data-version="v2"
+      data-status="APPROVED — READY FOR IMPLEMENTATION"
+    >
+      <div class="sync-title">Understanding sync</div>
+      <div class="sync-counts">
+        <span id="sync-confirmed">0</span> agreed ·
+        <span id="sync-flagged">0</span> to fix ·
+        <span id="sync-pending">0</span> pending
+      </div>
+      <div class="sync-bar"><div id="sync-bar-fill"></div></div>
+      <div id="sync-gate" class="sync-gate">Review the claims above</div>
+      <button type="button" id="copy-review-btn" class="copy-qa-btn">
+        📋 Copy review for the AI
+      </button>
+    </div>
+
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "default",
+        securityLevel: "loose",
+      });
+    </script>
+
+    <script>
+      const toc = document.getElementById("toc");
+      const sections = document.querySelectorAll('section[id^="s"]');
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const id = entry.target.id;
+              const link = toc.querySelector(`a[href="#${id}"]`);
+              toc
+                .querySelectorAll("a")
+                .forEach((a) => a.classList.remove("active"));
+              if (link) link.classList.add("active");
+            }
+          });
+        },
+        { threshold: 0.3, rootMargin: "-50% 0px -50% 0px" },
+      );
+
+      sections.forEach((section) => observer.observe(section));
+
+      toc.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          const target = document.querySelector(link.getAttribute("href"));
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      });
+    </script>
+
+    <script>
+      document.querySelectorAll("table").forEach((table) => {
+        if (table.closest(".table-wrap")) return;
+        const wrap = document.createElement("div");
+        wrap.className = "table-wrap";
+        table.parentNode.insertBefore(wrap, table);
+        wrap.appendChild(table);
+      });
+    </script>
+
+    <script>
+      (function () {
+        const backdrop = document.createElement("div");
+        backdrop.className = "diagram-backdrop";
+        document.body.appendChild(backdrop);
+
+        let activeCard = null;
+
+        function minimize(card) {
+          card.classList.remove("diagram-maximized");
+          const btn = card.querySelector(".diagram-toggle-btn");
+          if (btn) {
+            btn.textContent = "⛶";
+            btn.title = "Maximize diagram";
+          }
+          backdrop.classList.remove("active");
+          document.body.classList.remove("diagram-lock");
+          activeCard = null;
+        }
+
+        function maximize(card) {
+          if (activeCard && activeCard !== card) minimize(activeCard);
+          card.classList.add("diagram-maximized");
+          const btn = card.querySelector(".diagram-toggle-btn");
+          if (btn) {
+            btn.textContent = "✕";
+            btn.title = "Minimize diagram";
+          }
+          backdrop.classList.add("active");
+          document.body.classList.add("diagram-lock");
+          activeCard = card;
+        }
+
+        document.querySelectorAll("div.mermaid").forEach((diagram) => {
+          let card = diagram.closest(".mermaid-card");
+          if (!card) {
+            card = document.createElement("div");
+            card.className = "mermaid-card";
+            diagram.parentNode.insertBefore(card, diagram);
+            card.appendChild(diagram);
+          }
+          if (card.querySelector(".diagram-toggle-btn")) return;
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "diagram-toggle-btn";
+          btn.textContent = "⛶";
+          btn.title = "Maximize diagram";
+          btn.addEventListener("click", () => {
+            if (card.classList.contains("diagram-maximized")) {
+              minimize(card);
+            } else {
+              maximize(card);
+            }
+          });
+          card.appendChild(btn);
+        });
+
+        backdrop.addEventListener("click", () => {
+          if (activeCard) minimize(activeCard);
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && activeCard) minimize(activeCard);
+        });
+      })();
+    </script>
+
+    <script>
+      // Co-authoring engine: verdicts, forks, structured corrections, added
+      // claims, tension resolutions, example sign-off, recall, live sync, and
+      // the review export. All state persists per browser keyed by doc+version.
+      (function () {
+        const widget = document.getElementById("sync-widget");
+        if (!widget) return;
+
+        const docName = widget.dataset.doc || "";
+        const docVersion = widget.dataset.version || "";
+        const docStatus = widget.dataset.status || "";
+        const storeKey = "arch-review:" + docName + ":" + docVersion;
+
+        const state = load();
+        state.recall = state.recall || "";
+        state.claims = state.claims || {};
+        state.added = Array.isArray(state.added) ? state.added : [];
+        state.tensions = state.tensions || {};
+        state.examples = state.examples || {};
+        state.answers = state.answers || {};
+
+        function load() {
+          try {
+            return JSON.parse(localStorage.getItem(storeKey)) || {};
+          } catch (e) {
+            return {};
+          }
+        }
+        function save() {
+          try {
+            localStorage.setItem(storeKey, JSON.stringify(state));
+          } catch (e) {
+            /* private mode: review still works, just not persisted */
+          }
+        }
+        const txt = (el) => (el ? el.value.trim() : "");
+        const setText = (sel, val) => {
+          const el = document.querySelector(sel);
+          if (el) el.textContent = val;
+        };
+
+        // ---------- Recall / success statement ----------
+        const recall = document.getElementById("recall-box");
+        if (recall) {
+          recall.value = state.recall;
+          recall.addEventListener("input", () => {
+            state.recall = recall.value;
+            save();
+          });
+        }
+
+        // ---------- Understanding rows ----------
+        const uTableBody = document.querySelector("#u-table tbody");
+        const claimRows = () =>
+          Array.from(document.querySelectorAll("#u-table tbody tr[data-id]"));
+
+        function rowState(row) {
+          if (row.dataset.fork === "true") {
+            const c = row.dataset.forkChoice;
+            if (c && c !== "neither") return "agreed";
+            if (c === "neither") return "flagged";
+            return "pending";
+          }
+          const v = row.dataset.verdict;
+          if (v === "yes") return "agreed";
+          if (v === "no" || v === "partly") return "flagged";
+          return "pending";
+        }
+        function paintRow(row) {
+          row.dataset.state = rowState(row);
+        }
+
+        function applyVerdict(row, verdict) {
+          if (verdict) row.dataset.verdict = verdict;
+          else row.removeAttribute("data-verdict");
+          row.querySelectorAll(".verdict-btn").forEach((b) => {
+            b.classList.toggle("selected", b.dataset.verdict === verdict);
+          });
+          const correction = row.querySelector(".u-correction");
+          if (correction)
+            correction.hidden = !(verdict === "no" || verdict === "partly");
+          paintRow(row);
+        }
+
+        function wireClaim(row) {
+          const id = row.dataset.id;
+          const note = row.querySelector(".u-note");
+
+          if (row.dataset.fork === "true") {
+            row.querySelectorAll('input[type="radio"]').forEach((radio) => {
+              radio.addEventListener("change", () => {
+                row.dataset.forkChoice = radio.value;
+                if (note) note.hidden = radio.value !== "neither";
+                state.claims[id] = { fork: radio.value, note: txt(note) };
+                paintRow(row);
+                save();
+                refresh();
+              });
+            });
+            if (note)
+              note.addEventListener("input", () => {
+                state.claims[id] = {
+                  fork: row.dataset.forkChoice || "",
+                  note: note.value,
+                };
+                save();
+              });
+            const s = state.claims[id];
+            if (s && s.fork) {
+              row.querySelectorAll('input[type="radio"]').forEach((r) => {
+                if (r.value === s.fork) r.checked = true;
+              });
+              row.dataset.forkChoice = s.fork;
+              if (note) {
+                note.hidden = s.fork !== "neither";
+                note.value = s.note || "";
+              }
+            }
+            paintRow(row);
+            return;
+          }
+
+          row.querySelectorAll(".verdict-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const next =
+                row.dataset.verdict === btn.dataset.verdict
+                  ? ""
+                  : btn.dataset.verdict;
+              applyVerdict(row, next);
+              const cur = state.claims[id] || {};
+              state.claims[id] = {
+                verdict: next,
+                note: txt(note),
+                correction: cur.correction || "",
+              };
+              save();
+              refresh();
+            });
+          });
+          row.querySelectorAll(".correction-opt").forEach((opt) => {
+            opt.addEventListener("click", () => {
+              const cur = state.claims[id] || {};
+              const nextVal =
+                cur.correction === opt.dataset.value ? "" : opt.dataset.value;
+              row.querySelectorAll(".correction-opt").forEach((o) =>
+                o.classList.toggle("selected", o.dataset.value === nextVal),
+              );
+              state.claims[id] = {
+                verdict: row.dataset.verdict || "",
+                note: txt(note),
+                correction: nextVal,
+              };
+              save();
+            });
+          });
+          if (note)
+            note.addEventListener("input", () => {
+              const cur = state.claims[id] || {};
+              state.claims[id] = {
+                verdict: row.dataset.verdict || "",
+                note: note.value,
+                correction: cur.correction || "",
+              };
+              save();
+            });
+
+          const s = state.claims[id];
+          if (s) {
+            if (note) note.value = s.note || "";
+            if (s.correction)
+              row.querySelectorAll(".correction-opt").forEach((o) =>
+                o.classList.toggle("selected", o.dataset.value === s.correction),
+              );
+            applyVerdict(row, s.verdict || "");
+          }
+        }
+
+        // ---------- Added claims (human authors what the AI missed) ----------
+        function renderAdded(item) {
+          const tr = document.createElement("tr");
+          tr.className = "added-row";
+          tr.dataset.addedId = item.id;
+          tr.innerHTML =
+            `<td>${item.id}</td><td>you</td>` +
+            `<td class="u-statement"><textarea class="added-text" name="added-${item.id}" placeholder="The thing I missed…"></textarea></td>` +
+            `<td><span class="badge src-user">you said</span></td>` +
+            `<td><span class="badge conf-high">high</span></td>` +
+            `<td><button type="button" class="remove-added">✕ remove</button></td>`;
+          uTableBody.appendChild(tr);
+          const ta = tr.querySelector(".added-text");
+          ta.value = item.text || "";
+          ta.addEventListener("input", () => {
+            item.text = ta.value;
+            save();
+          });
+          tr.querySelector(".remove-added").addEventListener("click", () => {
+            state.added = state.added.filter((x) => x.id !== item.id);
+            tr.remove();
+            save();
+            refresh();
+          });
+        }
+        const addBtn = document.getElementById("add-claim-btn");
+        if (addBtn) {
+          state.added.forEach(renderAdded);
+          addBtn.addEventListener("click", () => {
+            let n = state.added.length + 1;
+            let id = "A" + n;
+            while (state.added.some((x) => x.id === id)) id = "A" + ++n;
+            const item = { id: id, text: "" };
+            state.added.push(item);
+            renderAdded(item);
+            save();
+          });
+        }
+
+        // ---------- Tensions ----------
+        const tensionCards = Array.from(
+          document.querySelectorAll(".tension-card[data-id]"),
+        );
+        tensionCards.forEach((card) => {
+          const id = card.dataset.id;
+          const note = card.querySelector(".t-note");
+          card.querySelectorAll('input[type="radio"]').forEach((radio) => {
+            radio.addEventListener("change", () => {
+              card.dataset.choice = radio.value;
+              if (note) note.hidden = radio.value !== "other";
+              state.tensions[id] = { choice: radio.value, note: txt(note) };
+              save();
+              refresh();
+            });
+          });
+          if (note)
+            note.addEventListener("input", () => {
+              state.tensions[id] = {
+                choice: card.dataset.choice || "",
+                note: note.value,
+              };
+              save();
+            });
+          const s = state.tensions[id];
+          if (s && s.choice) {
+            card.querySelectorAll('input[type="radio"]').forEach((r) => {
+              if (r.value === s.choice) r.checked = true;
+            });
+            card.dataset.choice = s.choice;
+            if (note) {
+              note.hidden = s.choice !== "other";
+              note.value = s.note || "";
+            }
+          }
+        });
+
+        // ---------- Acceptance examples ----------
+        const exCards = Array.from(
+          document.querySelectorAll(".example-card[data-id]"),
+        );
+        exCards.forEach((card) => {
+          const id = card.dataset.id;
+          const note = card.querySelector(".ex-note");
+          card.querySelectorAll(".verdict-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const next =
+                card.dataset.verdict === btn.dataset.verdict
+                  ? ""
+                  : btn.dataset.verdict;
+              if (next) card.dataset.verdict = next;
+              else card.removeAttribute("data-verdict");
+              card.querySelectorAll(".verdict-btn").forEach((b) =>
+                b.classList.toggle("selected", b.dataset.verdict === next),
+              );
+              if (note) note.hidden = next !== "no";
+              state.examples[id] = { verdict: next, note: txt(note) };
+              save();
+              refresh();
+            });
+          });
+          if (note)
+            note.addEventListener("input", () => {
+              state.examples[id] = {
+                verdict: card.dataset.verdict || "",
+                note: note.value,
+              };
+              save();
+            });
+          const s = state.examples[id];
+          if (s) {
+            if (s.verdict) card.dataset.verdict = s.verdict;
+            card.querySelectorAll(".verdict-btn").forEach((b) =>
+              b.classList.toggle("selected", b.dataset.verdict === s.verdict),
+            );
+            if (note) {
+              note.hidden = s.verdict !== "no";
+              note.value = s.note || "";
+            }
+          }
+        });
+
+        // ---------- Open questions ----------
+        const oqRows = Array.from(
+          document.querySelectorAll("#oq-table tbody tr[data-id]"),
+        );
+        oqRows.forEach((row) => {
+          const id = row.dataset.id;
+          const ta = row.querySelector("textarea");
+          if (!ta) return;
+          if (state.answers[id]) ta.value = state.answers[id];
+          ta.addEventListener("input", () => {
+            state.answers[id] = ta.value;
+            save();
+          });
+        });
+
+        // ---------- Live sync tally + approval gate ----------
+        function refresh() {
+          let agreed = 0;
+          let flagged = 0;
+          let pending = 0;
+          let highPending = 0;
+
+          claimRows().forEach((row) => {
+            paintRow(row);
+            const s = rowState(row);
+            if (s === "agreed") agreed++;
+            else if (s === "flagged") flagged++;
+            else {
+              pending++;
+              if (row.dataset.priority === "high") highPending++;
+            }
+          });
+          tensionCards.forEach((card) => {
+            if (card.dataset.choice) agreed++;
+            else {
+              pending++;
+              highPending++;
+            }
+          });
+          exCards.forEach((card) => {
+            const v = card.dataset.verdict;
+            if (v === "yes") agreed++;
+            else if (v === "no") flagged++;
+            else pending++;
+          });
+
+          const total = agreed + flagged + pending;
+          setText("#sync-confirmed", agreed);
+          setText("#sync-flagged", flagged);
+          setText("#sync-pending", pending);
+          document.getElementById("sync-bar-fill").style.width = total
+            ? (agreed / total) * 100 + "%"
+            : "0%";
+
+          const gate = document.getElementById("sync-gate");
+          if (highPending > 0) {
+            gate.textContent =
+              "⚠ " +
+              highPending +
+              " high-stakes item" +
+              (highPending > 1 ? "s" : "") +
+              " need a decision";
+            gate.className = "sync-gate warn";
+          } else if (pending > 0) {
+            gate.textContent =
+              pending + " item" + (pending > 1 ? "s" : "") + " left to review";
+            gate.className = "sync-gate";
+          } else if (flagged > 0) {
+            gate.textContent =
+              "✓ all reviewed · " + flagged + " to revise next pass";
+            gate.className = "sync-gate";
+          } else {
+            gate.textContent = "✓ fully synced — ready to approve";
+            gate.className = "sync-gate ok";
+          }
+        }
+
+        claimRows().forEach(wireClaim);
+        refresh();
+
+        // ---------- Review export (the manifest carried to the next pass) ----------
+        function labelFor(input) {
+          const label = input && input.closest("label");
+          const span = label && label.querySelector("span");
+          return span ? span.textContent.trim() : "";
+        }
+        function checkedLabel(container, name) {
+          const input = container.querySelector(
+            'input[name="' + name + '"]:checked',
+          );
+          return input ? labelFor(input) : "";
+        }
+
+        function buildReview() {
+          const confirmed = [];
+          const forks = [];
+          const corrections = [];
+          const unreviewed = [];
+
+          claimRows().forEach((row) => {
+            const id = row.dataset.id;
+            const stmt = row.dataset.statement || "";
+            if (row.dataset.fork === "true") {
+              const c = row.dataset.forkChoice;
+              if (!c) {
+                unreviewed.push(id);
+              } else if (c === "neither") {
+                const note = txt(row.querySelector(".u-note"));
+                corrections.push(
+                  `${id} [FORK: none fit] "${stmt}"\n  Right reading: ${note || "(no note)"}`,
+                );
+              } else {
+                forks.push(`${id} → "${checkedLabel(row, "fork-" + id)}"`);
+                confirmed.push(id);
+              }
+              return;
+            }
+            const v = row.dataset.verdict;
+            const cur = state.claims[id] || {};
+            if (v === "yes") {
+              confirmed.push(id);
+            } else if (v === "no" || v === "partly") {
+              const tag = v === "no" ? "WRONG" : "PARTLY";
+              const fix = cur.correction
+                ? `right answer: "${cur.correction}"  (structured)`
+                : `note: ${txt(row.querySelector(".u-note")) || "(no note)"}  (prose)`;
+              corrections.push(`${id} [${tag}] "${stmt}"\n  ${fix}`);
+            } else {
+              unreviewed.push(id);
+            }
+          });
+
+          const added = state.added
+            .filter((a) => (a.text || "").trim())
+            .map((a) => `+${a.id}: ${a.text.trim()}`);
+
+          const tensions = tensionCards.map((card) => {
+            const id = card.dataset.id;
+            const c = card.dataset.choice;
+            if (!c) return `${id}: UNRESOLVED`;
+            if (c === "other")
+              return `${id} → other: ${txt(card.querySelector(".t-note")) || "(no note)"}`;
+            return `${id} → ${checkedLabel(card, "tension-" + id)}`;
+          });
+
+          const exApproved = [];
+          const exRejected = [];
+          const exUnreviewed = [];
+          exCards.forEach((card) => {
+            const id = card.dataset.id;
+            const v = card.dataset.verdict;
+            if (v === "yes") exApproved.push(id);
+            else if (v === "no")
+              exRejected.push(
+                `${id}: ${card.dataset.example}\n  should be: ${txt(card.querySelector(".ex-note")) || "(no note)"}`,
+              );
+            else exUnreviewed.push(id);
+          });
+
+          const answers = oqRows.map((row) => {
+            const q = row.children[1] ? row.children[1].textContent.trim() : "";
+            const a = txt(row.querySelector("textarea"));
+            return `${row.dataset.id}: ${q}\n→ ${a || "(no answer)"}`;
+          });
+
+          return [
+            `ARCH REVIEW — ${docName} ${docVersion} [${docStatus.toUpperCase()}]`,
+            "",
+            "YOUR SUCCESS STATEMENT (your words):",
+            state.recall.trim() || "(not provided)",
+            "(reconcile this against the AI Overview at the top of the doc)",
+            "",
+            `CONFIRMED CLAIMS: ${confirmed.join(", ") || "none"}`,
+            "",
+            forks.length ? "FORK CHOICES:\n" + forks.join("\n") : "FORK CHOICES: none",
+            "",
+            "CORRECTIONS (apply these):",
+            corrections.length ? corrections.join("\n") : "none",
+            "",
+            added.length
+              ? "NEW CLAIMS YOU ADDED:\n" + added.join("\n")
+              : "NEW CLAIMS YOU ADDED: none",
+            "",
+            "TENSIONS:",
+            tensions.length ? tensions.join("\n") : "none",
+            "",
+            "ACCEPTANCE EXAMPLES:",
+            `  APPROVED (binding): ${exApproved.join(", ") || "none"}`,
+            exRejected.length
+              ? "  REJECTED:\n    " + exRejected.join("\n    ")
+              : "  REJECTED: none",
+            `  UNREVIEWED: ${exUnreviewed.join(", ") || "none"}`,
+            "",
+            "OPEN QUESTION ANSWERS:",
+            answers.length ? answers.join("\n") : "none",
+            "",
+            `UNREVIEWED CLAIMS: ${unreviewed.join(", ") || "none"}`,
+            "",
+            "NEXT: reconcile my overview with your success statement; apply the corrections, fork choices, new claims, tension resolutions, and rejected-example fixes to the arch JSON; bump the version and add a revision-log row; regenerate with arch-inject.js. On APPROVED, the CONFIRMED claims + APPROVED examples are the acceptance criteria the implementation must satisfy — carry them into /feature as verification anchors.",
+          ].join("\n");
+        }
+
+        document
+          .getElementById("copy-review-btn")
+          .addEventListener("click", (e) => {
+            const btn = e.currentTarget;
+            navigator.clipboard.writeText(buildReview()).then(() => {
+              const original = btn.textContent;
+              btn.textContent = "✓ Copied";
+              btn.classList.add("copied");
+              setTimeout(() => {
+                btn.textContent = original;
+                btn.classList.remove("copied");
+              }, 1500);
+            });
+          });
+      })();
+    </script>
+  </body>
+</html>

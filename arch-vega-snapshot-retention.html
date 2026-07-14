@@ -1,0 +1,1811 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shared Understanding — 30-Day Vega Snapshot Retention &amp; Visibility</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --accent: #2563eb;
+        --bg: #f8fafc;
+        --card-bg: #ffffff;
+        --text: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --status-draft: #64748b;
+        --status-review: #f59e0b;
+        --status-approved: #16a34a;
+        --wrong: #e11d48;
+        --warn: #b45309;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.6;
+        color: var(--text);
+        background: var(--bg);
+        min-height: 100vh;
+      }
+
+      nav#toc {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 240px;
+        height: 100vh;
+        background: var(--card-bg);
+        border-right: 1px solid var(--border);
+        overflow-y: auto;
+        z-index: 100;
+        padding: 2rem 1rem;
+      }
+
+      nav#toc .brand {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: var(--accent);
+        margin-bottom: 2rem;
+        display: block;
+      }
+
+      nav#toc a {
+        display: block;
+        padding: 0.5rem 0.75rem;
+        margin: 0.5rem 0;
+        color: var(--text);
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+      }
+
+      nav#toc a:hover {
+        background: var(--bg);
+        color: var(--accent);
+      }
+
+      nav#toc a.active {
+        background: var(--accent);
+        color: white;
+        font-weight: 500;
+      }
+
+      main {
+        margin-left: 240px;
+        padding: 3rem 2rem;
+        margin-right: auto;
+      }
+
+      header {
+        margin-bottom: 3rem;
+      }
+
+      header h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+      }
+
+      header .subtitle {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+
+      .status-banner {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .status-banner.draft {
+        background: rgba(100, 116, 139, 0.1);
+        color: var(--status-draft);
+        border-left: 4px solid var(--status-draft);
+      }
+
+      .status-banner.review {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--status-review);
+        border-left: 4px solid var(--status-review);
+      }
+
+      .status-banner.approved {
+        background: rgba(22, 163, 74, 0.1);
+        color: var(--status-approved);
+        border-left: 4px solid var(--status-approved);
+      }
+
+      section {
+        margin-bottom: 3rem;
+        scroll-margin-top: 2rem;
+      }
+
+      section h2 {
+        font-size: 1.4rem;
+        margin-bottom: 1.5rem;
+        padding-left: 1rem;
+        border-left: 4px solid var(--accent);
+        color: var(--text);
+      }
+
+      .card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      .card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        color: var(--text);
+      }
+
+      .card h4 {
+        font-size: 1rem;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        color: var(--accent);
+      }
+
+      .card h4:first-child {
+        margin-top: 0;
+      }
+
+      .card p {
+        margin-bottom: 1rem;
+        color: var(--text);
+      }
+
+      .card ul,
+      .card ol {
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .card li {
+        margin-bottom: 0.5rem;
+        color: var(--text);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1rem;
+      }
+
+      table thead {
+        background: var(--bg);
+        border-bottom: 2px solid var(--border);
+      }
+
+      table th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text);
+        font-size: 0.9rem;
+        white-space: nowrap;
+      }
+
+      table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+        font-size: 0.95rem;
+        white-space: nowrap;
+      }
+
+      table tbody tr:nth-child(even) {
+        background: rgba(100, 116, 139, 0.02);
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        margin-bottom: 1rem;
+      }
+
+      /* Interactive tables hold sentences, not identifiers: let them wrap. */
+      #u-table td,
+      #oq-table td {
+        white-space: normal;
+        vertical-align: top;
+      }
+
+      #u-table .u-statement {
+        min-width: 320px;
+      }
+
+      #u-table .u-verdict {
+        min-width: 210px;
+      }
+
+      #oq-table td:nth-child(2) {
+        min-width: 260px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 0.15rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .badge.src-user {
+        background: rgba(37, 99, 235, 0.12);
+        color: var(--accent);
+      }
+      .badge.src-code {
+        background: rgba(22, 163, 74, 0.12);
+        color: var(--status-approved);
+      }
+      .badge.src-inferred {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warn);
+      }
+      .badge.src-assumed {
+        background: rgba(225, 29, 72, 0.12);
+        color: #be123c;
+      }
+      .badge.conf-high {
+        background: rgba(22, 163, 74, 0.12);
+        color: var(--status-approved);
+      }
+      .badge.conf-medium {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warn);
+      }
+      .badge.conf-low {
+        background: rgba(225, 29, 72, 0.12);
+        color: #be123c;
+      }
+      .badge.kind-example {
+        background: rgba(22, 163, 74, 0.12);
+        color: var(--status-approved);
+      }
+      .badge.kind-counter {
+        background: rgba(225, 29, 72, 0.12);
+        color: #be123c;
+      }
+      .badge.tension-badge {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warn);
+      }
+
+      .u-evidence {
+        margin-top: 0.35rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .u-impact {
+        margin-top: 0.25rem;
+        font-size: 0.8rem;
+        color: var(--warn);
+      }
+
+      .priority-flag {
+        margin-top: 0.4rem;
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #be123c;
+        background: rgba(225, 29, 72, 0.09);
+        border: 1px solid rgba(225, 29, 72, 0.25);
+        border-radius: 999px;
+        padding: 0.1rem 0.55rem;
+      }
+
+      .fork-hint {
+        margin-top: 0.4rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--accent);
+      }
+
+      .u-hint {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+      }
+
+      /* Verdict buttons (claims + examples) */
+      .verdict-group {
+        display: flex;
+        gap: 0.35rem;
+        margin-bottom: 0.4rem;
+      }
+
+      .verdict-btn {
+        width: 2rem;
+        height: 2rem;
+        border: 1px solid var(--border);
+        background: var(--card-bg);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        line-height: 1;
+        color: var(--text-muted);
+        transition: all 0.15s;
+      }
+
+      .verdict-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .verdict-btn.v-yes.selected {
+        background: var(--status-approved);
+        border-color: var(--status-approved);
+        color: white;
+      }
+      .verdict-btn.v-partly.selected {
+        background: var(--status-review);
+        border-color: var(--status-review);
+        color: white;
+      }
+      .verdict-btn.v-no.selected {
+        background: var(--wrong);
+        border-color: var(--wrong);
+        color: white;
+      }
+
+      /* Row state colouring (agreed / flagged) for claims */
+      #u-table tbody tr[data-state="agreed"] {
+        background: rgba(22, 163, 74, 0.07);
+      }
+      #u-table tbody tr[data-state="flagged"] {
+        background: rgba(225, 29, 72, 0.07);
+      }
+      #u-table tbody tr[data-priority="high"] td:first-child {
+        box-shadow: inset 3px 0 0 #be123c;
+      }
+
+      /* Fork radio options */
+      .fork-opt,
+      .tension-opt {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.45rem;
+        font-size: 0.88rem;
+        padding: 0.3rem 0.4rem;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-bottom: 0.2rem;
+      }
+      .fork-opt:hover,
+      .tension-opt:hover {
+        background: var(--bg);
+      }
+      .fork-opt input,
+      .tension-opt input {
+        margin-top: 0.28rem;
+      }
+      .fork-neither span {
+        color: var(--text-muted);
+      }
+
+      /* Structured correction options */
+      .u-correction {
+        margin-top: 0.25rem;
+      }
+      .correction-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      }
+      .correction-label {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-right: 0.15rem;
+      }
+      .correction-opt {
+        border: 1px solid var(--border);
+        background: var(--card-bg);
+        border-radius: 6px;
+        padding: 0.25rem 0.6rem;
+        font-size: 0.82rem;
+        cursor: pointer;
+        color: var(--text);
+        transition: all 0.15s;
+      }
+      .correction-opt:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .correction-opt.selected {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+      }
+
+      /* Add-a-claim */
+      .add-claim-row {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 0.5rem;
+      }
+      .ghost-btn {
+        background: var(--card-bg);
+        border: 1px dashed var(--accent);
+        color: var(--accent);
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .ghost-btn:hover {
+        background: rgba(37, 99, 235, 0.06);
+      }
+      #u-table tbody tr.added-row {
+        background: rgba(37, 99, 235, 0.05);
+      }
+      textarea.added-text {
+        width: 100%;
+        min-width: 260px;
+        min-height: 2.5rem;
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.9rem;
+        color: var(--text);
+        resize: vertical;
+      }
+      .remove-added {
+        background: none;
+        border: none;
+        color: var(--wrong);
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+      .remove-added:hover {
+        text-decoration: underline;
+      }
+
+      /* Recall / success statement */
+      .recall-card {
+        border-left: 4px solid var(--status-review);
+        background: rgba(245, 158, 11, 0.05);
+      }
+      .recall-card h3 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      textarea#recall-box {
+        width: 100%;
+        min-height: 4rem;
+        padding: 0.6rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        color: var(--text);
+        resize: vertical;
+      }
+
+      /* Tensions */
+      .tension-card {
+        border-left: 4px solid var(--status-review);
+      }
+      .tension-head {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .tension-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      .tension-col {
+        padding: 0.85rem 1rem;
+        border-radius: 8px;
+        background: var(--bg);
+      }
+      .tension-col.want {
+        border-top: 3px solid var(--accent);
+      }
+      .tension-col.code {
+        border-top: 3px solid var(--wrong);
+      }
+      .tension-col h4 {
+        margin: 0 0 0.4rem 0;
+      }
+      .tension-col p {
+        margin: 0;
+        font-size: 0.92rem;
+      }
+      .tension-rec {
+        font-size: 0.9rem;
+        background: rgba(37, 99, 235, 0.05);
+        border-radius: 8px;
+        padding: 0.6rem 0.85rem;
+        margin-bottom: 1rem;
+      }
+      .tension-resolve {
+        border-top: 1px solid var(--border);
+        padding-top: 0.85rem;
+      }
+      .resolve-label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.88rem;
+        margin-bottom: 0.5rem;
+      }
+      .tension-card[data-choice] {
+        border-left-color: var(--status-approved);
+      }
+
+      /* Acceptance examples */
+      .example-card {
+        border-left: 4px solid var(--status-approved);
+      }
+      .example-card.ex-counter {
+        border-left-color: var(--wrong);
+      }
+      .ex-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.85rem;
+      }
+      .ex-verdict {
+        margin-bottom: 0;
+      }
+      .ex-gwt > div {
+        padding: 0.35rem 0;
+        font-size: 0.93rem;
+        border-bottom: 1px dashed var(--border);
+      }
+      .ex-gwt > div:last-child {
+        border-bottom: none;
+      }
+      .gwt-k {
+        display: inline-block;
+        width: 3.6rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .ex-refs {
+        margin-top: 0.5rem;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+      .example-card[data-verdict="yes"] {
+        background: rgba(22, 163, 74, 0.06);
+      }
+      .example-card[data-verdict="no"] {
+        background: rgba(225, 29, 72, 0.06);
+      }
+
+      .mermaid-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+        position: relative;
+      }
+
+      .mermaid {
+        display: flex;
+        justify-content: center;
+      }
+
+      .diagram-toggle-btn {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text-muted);
+        font-size: 1rem;
+        line-height: 1;
+        cursor: pointer;
+        z-index: 2;
+        transition: all 0.2s;
+      }
+
+      .diagram-toggle-btn:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      .diagram-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        z-index: 999;
+      }
+
+      .diagram-backdrop.active {
+        display: block;
+      }
+
+      body.diagram-lock {
+        overflow: hidden;
+      }
+
+      .mermaid-card.diagram-maximized {
+        position: fixed;
+        inset: 2rem;
+        z-index: 1000;
+        overflow: auto;
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+      }
+
+      .mermaid-card.diagram-maximized .mermaid {
+        width: 100%;
+        height: 100%;
+      }
+
+      .mermaid-card.diagram-maximized .mermaid svg {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+      }
+
+      pre,
+      code {
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-width: 100%;
+        font-family: "Courier New", Courier, monospace;
+      }
+
+      pre {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+        line-height: 1.4;
+      }
+
+      code {
+        background: rgba(100, 116, 139, 0.1);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        color: #e11d48;
+        font-size: 0.9rem;
+      }
+
+      pre code {
+        background: none;
+        padding: 0;
+        color: var(--text);
+      }
+
+      details {
+        margin-bottom: 1.5rem;
+      }
+
+      details summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--accent);
+        padding: 0.75rem;
+        user-select: none;
+        transition: all 0.2s;
+      }
+
+      details summary:hover {
+        background: var(--bg);
+        border-radius: 6px;
+      }
+
+      details[open] summary {
+        margin-bottom: 1rem;
+      }
+
+      details pre {
+        margin-top: 1rem;
+      }
+
+      .approval-gate {
+        background: rgba(22, 163, 74, 0.1);
+        border-left: 4px solid var(--status-approved);
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        color: var(--status-approved);
+        font-weight: 500;
+        margin-top: 2rem;
+      }
+
+      .ai-overview-card {
+        border-left: 4px solid var(--accent);
+        background: rgba(37, 99, 235, 0.04);
+      }
+
+      .copy-qa-btn {
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .copy-qa-btn:hover {
+        opacity: 0.9;
+      }
+      .copy-qa-btn.copied {
+        background: var(--status-approved);
+      }
+
+      textarea.oq-answer,
+      textarea.u-note,
+      textarea.t-note,
+      textarea.ex-note {
+        width: 100%;
+        min-width: 200px;
+        min-height: 3rem;
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.9rem;
+        color: var(--text);
+        resize: vertical;
+      }
+      textarea.u-note,
+      textarea.t-note,
+      textarea.ex-note {
+        min-width: 180px;
+        margin-top: 0.35rem;
+      }
+
+      #sync-widget {
+        position: fixed;
+        right: 1.25rem;
+        bottom: 1.25rem;
+        z-index: 500;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        padding: 0.9rem 1rem;
+        width: 250px;
+        font-size: 0.85rem;
+      }
+      #sync-widget .sync-title {
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+      }
+      #sync-widget .sync-counts {
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+      }
+      #sync-widget .sync-bar {
+        height: 6px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+      }
+      #sync-bar-fill {
+        height: 100%;
+        width: 0;
+        background: var(--status-approved);
+        transition: width 0.2s;
+      }
+      .sync-gate {
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+        color: var(--text-muted);
+      }
+      .sync-gate.warn {
+        color: #be123c;
+      }
+      .sync-gate.ok {
+        color: var(--status-approved);
+      }
+      #copy-review-btn {
+        width: 100%;
+      }
+
+      section,
+      .card {
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+
+      @media (max-width: 900px) {
+        nav#toc {
+          position: static;
+          width: 100%;
+          height: auto;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+          padding: 1rem;
+          margin-bottom: 1rem;
+        }
+        nav#toc .brand {
+          display: inline-block;
+          margin-right: 2rem;
+        }
+        nav#toc a {
+          display: inline-block;
+          margin: 0 0.5rem;
+          padding: 0.4rem 0.6rem;
+          font-size: 0.85rem;
+        }
+        main {
+          margin-left: 0;
+          padding: 2rem 1rem;
+        }
+        header h1 {
+          font-size: 1.5rem;
+        }
+        .tension-cols {
+          grid-template-columns: 1fr;
+        }
+        #sync-widget {
+          right: 0.75rem;
+          bottom: 0.75rem;
+          width: 210px;
+          padding: 0.7rem 0.8rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav id="toc">
+      <span class="brand">🧠 Understanding</span>
+      <a href="#s-overview">★ At a Glance</a>
+      <a href="#s0">0 · Document Control</a>
+      <a href="#s1">1 · The Concept</a>
+      <a href="#s2">2 · The Code Today</a>
+      <a href="#s3">3 · The Change</a>
+      <a href="#s4">4 · Acceptance Examples</a>
+      <a href="#s5">5 · Understanding Checklist</a>
+      <a href="#s6">6 · Tensions</a>
+      <a href="#s7">7 · Scope</a>
+      <a href="#s8">8 · Open Questions</a>
+      <a href="#s9">9 · Risks</a>
+      <a href="#s10">10 · Implementation Sketch</a>
+    </nav>
+
+    <main>
+      <header>
+        <h1>🧠 Shared Understanding — 30-Day Vega Snapshot Retention &amp; Visibility</h1>
+        <p class="subtitle">Store and display 30 days of daily vega-flow snapshots with auto-cleanup instead of indefinite retention. · React · ASP.NET Core · Postgres · Redis</p>
+      </header>
+
+      <section id="s-overview">
+        <h2>🤖 At a Glance — Do We Agree on the Goal?</h2>
+        <div class="card ai-overview-card">
+          <h3>My understanding of what you want</h3>
+          <p><strong>Your intent:</strong> The Vega Lead page currently feels like it only shows the latest snapshot. You want historical data spanning 30 days available and visible, with automatic retention (not indefinite storage).</p><p><strong>What's happening now:</strong> VegaLeadView has a date dropdown that already lists all archived dates going back indefinitely (stored in Postgres <code>VegaFlowDailySnapshots</code> with no expiry), but the dropdown is subtle and defaults to the most recent date. Code comment explicitly states 'kept forever until the operator deletes them manually'.</p><p><strong>The gap:</strong> Two interpretations conflict: (1) the snapshots already exist indefinitely and are already queryable by date, but the UI doesn't make this obvious, or (2) you want a new 30-day bounded retention policy with automatic cleanup. This doc explores both and surfaces the choice.</p>
+        </div>
+        <div class="card recall-card">
+          <h3>✍️ Your turn — success in your own words</h3>
+          <p class="u-hint">
+            Before trusting my summary, write what a correct result looks like
+            to you, in a sentence or two. If your words and mine diverge, that
+            gap is the most important thing on this page. Your text is included
+            in the copied review so I can reconcile the two.
+          </p>
+          <textarea
+            id="recall-box"
+            placeholder="In my words, this is done when…"
+          ></textarea>
+        </div>
+      </section>
+
+      <section id="s0">
+        <h2>0 · Document Control</h2>
+        <div class="status-banner draft">
+          <strong>Status:</strong> DRAFT ·
+          <strong>Version:</strong> v1 ·
+          <strong>Last Updated:</strong> 2026-07-13 ·
+          <strong>Author:</strong> Claude 3.7 Sonnet
+        </div>
+
+        <div class="card">
+          <h3>Revision Log</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Version</th>
+                  <th>Date</th>
+                  <th>Summary of Changes</th>
+                  <th>Driven By</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>v1</td><td>2026-07-13</td><td>First draft: clarify snapshot storage/retention model and UI discoverability</td><td>First generation</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="approval-gate">
+          <strong>Approval Gate:</strong> Implementation begins only after every
+          high-stakes claim in Section 5 is verdicted, every tension is resolved,
+          the acceptance examples you approve are agreed as binding, and you flip
+          this document to APPROVED. Matching mental models is the deliverable
+          here; code comes later.
+        </div>
+      </section>
+
+      <section id="s1">
+        <h2>1 · The Concept, In My Own Words</h2>
+        <div class='card'><h3>The Concept, In My Own Words</h3><p>The Vega Lead page is an archive of historical vega-flow leading indicators, captured once per trading day at market close. Right now, you can access past snapshots via a date dropdown, but it's not obvious—you only see one day at a time, and the UI defaults to the most recent. You want a clearer way to browse and retain 30 days of history, so you can spot trends and review how vega positioning evolved over a month without manually hunting through a small dropdown.</p><p><strong>Why it matters:</strong> Trading decisions benefit from seeing patterns across days. A 30-day rolling window gives you enough data to spot vega-flow regime shifts, without the cognitive load of maintaining years of history.</p></div>
+      </section>
+
+      <section id="s2">
+        <h2>2 · What the Code Does Today</h2>
+        <div class='card'><h3>What the Code Does Today</h3><p><strong>Storage:</strong></p><ul><li><strong>Intraday vega-flow (live):</strong> Stored in Redis list <code>chain:vegaflow:yyyyMMdd</code>, sampled ~60s during market hours (09:10–15:35 IST). TTL 30 hours.</li><li><strong>Daily snapshot (archived):</strong> At market close (15:30 IST), <code>ChainAnalysisService.SnapshotDailyVegaFlowIfDueAsync()</code> copies the day's intraday points from Redis into Postgres table <code>VegaFlowDailySnapshots</code> (one row per trading day). No auto-expiry; manual deletion only.</li></ul><p><strong>API:</strong></p><ul><li><code>GET /api/v1/analysis/vega-flow</code> → today's intraday Redis series (live data, updated ~60s)</li><li><code>GET /api/v1/analysis/vega-flow/history-dates</code> → list of all archived dates in Postgres, most recent first</li><li><code>GET /api/v1/analysis/vega-flow/history/{date}</code> → one day's complete snapshot (VegaFlowPoint[])</li></ul><p><strong>UI (VegaLeadView):</strong></p><ul><li>Date dropdown (lines 62–74) lists all available snapshots, defaults to most recent on first load.</li><li>Clicking a date fetches and renders its snapshot as a two-axis overlay chart (CE/PE vega left, NIFTY spot right).</li><li>Snapshots are independent; selecting one doesn't auto-update when new dates arrive.</li></ul><p><strong>Current flow diagram:</strong></p><pre>Market Hours (09:10-15:35 IST, Mon-Fri)
+   ↓ every ~60s
+  MarketDataWorker samples vega-flow
+   ↓
+  ChainAnalysisService.AppendVegaFlowPoint()
+   ↓
+  Redis chain:vegaflow:yyyyMMdd (list, 30h TTL)
+   ↓
+   ↓ At 15:30 IST (market close)
+   ↓
+  SnapshotDailyVegaFlowIfDueAsync()
+   ↓
+  Postgres VegaFlowDailySnapshots (permanent, no expiry)
+   ↓
+  VegaLeadView queries history-dates & history/{date}
+   ↓
+  Date dropdown + interactive chart</pre></div>
+      </section>
+
+      <section id="s3">
+        <h2>3 · The Change — Before → After</h2>
+        <div class='card'><h3>The Change — Before → After</h3><table style='width:100%; border-collapse: collapse;'><tr style='border-bottom: 1px solid #ccc;'><th style='padding: 8px; text-align: left;'>Aspect</th><th style='padding: 8px; text-align: left;'>Before</th><th style='padding: 8px; text-align: left;'>After</th></tr><tr style='border-bottom: 1px solid #ccc;'><td style='padding: 8px;'><strong>Retention</strong></td><td style='padding: 8px;'>Snapshots kept indefinitely; manual deletion only</td><td style='padding: 8px;'>(Option A) 30-day filtering at query time; or (Option B) 30-day hard-delete nightly with background job</td></tr><tr style='border-bottom: 1px solid #ccc;'><td style='padding: 8px;'><strong>UI Discoverability</strong></td><td style='padding: 8px;'>Date dropdown is small, unobtrusive, defaults to most recent</td><td style='padding: 8px;'>Dropdown is more prominent, renamed/relocated, or supplemented with a richer history browser (grid, timeline, or multi-day overlay)</td></tr><tr style='border-bottom: 1px solid #ccc;'><td style='padding: 8px;'><strong>Available Dates</strong></td><td style='padding: 8px;'>All snapshots ever recorded (months/years)</td><td style='padding: 8px;'>Most recent 30 trading days (or fewer if fewer days recorded)</td></tr><tr style='border-bottom: 1px solid #ccc;'><td style='padding: 8px;'><strong>Today's Status</strong></td><td style='padding: 8px;'>Only visible after 15:30 IST when snapshot is written</td><td style='padding: 8px;'>Same (no change to snapshot timing)</td></tr></table><p><strong>Target flow (Option A: filtering only):</strong></p><pre>Postgres VegaFlowDailySnapshots
+ (all historical rows, indefinite)
+   ↓
+ GET /api/v1/analysis/vega-flow/history-dates
+   ↓
+ Filter: TradingDate >= Now - 30 days
+   ↓
+ Return ~20-22 trading dates (30 calendar days ≈ 20 business days)
+   ↓
+ VegaLeadView dropdown (same UI, but shorter list)
+   ↓
+ Operator never sees >30 days old
+
+(Data stays in DB permanently; no cleanup required)</pre><p><strong>Target flow (Option B: hard-delete):</strong></p><pre>Postgres VegaFlowDailySnapshots
+   ↓
+ Nightly cleanup job (00:00 IST or post-close):
+   DELETE WHERE TradingDate < Now - 30 days
+   ↓
+ Only 20-22 most recent snapshots remain in DB
+   ↓
+ GET /api/v1/analysis/vega-flow/history-dates
+   ↓
+ (No filtering needed; DB only contains recent data)
+   ↓
+ VegaLeadView dropdown & chart (same UX)
+   ↓
+ Operator never sees old data; DB stays lean</pre></div>
+      </section>
+
+      <section id="s4">
+        <h2>4 · Acceptance Examples — Sign Off the Behaviour</h2>
+        <p class="u-hint">
+          Each example is a concrete input → outcome I believe you want (or, for a
+          counter-example, one that must NOT happen). Mark ✓ if that's the behaviour
+          you expect, ✗ if the outcome is wrong. The ones you ✓ become the binding
+          acceptance criteria the implementation is graded against — this is where
+          understanding turns into something testable.
+        </p>
+        <div class="card example-card ex-example" data-id="E1" data-example="Given It is 2026-07-13 at 14:00 IST (mid-afternoon during market hours). Operator opens the Vega Lead page.; When The page loads `history-dates` and renders the date dropdown.; Then Dropdown shows 2026-07-12 (most recent snapshot, from yesterday&#039;s close), 2026-07-11, 2026-07-10, … back to the earliest stored snapshot (today&#039;s data is not in the list yet because market hasn&#039;t closed)."><div class="ex-head"><span class="badge kind-example">E1 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> It is 2026-07-13 at 14:00 IST (mid-afternoon during market hours). Operator opens the Vega Lead page.</div><div><span class="gwt-k">When</span> The page loads `history-dates` and renders the date dropdown.</div><div><span class="gwt-k">Then</span> Dropdown shows 2026-07-12 (most recent snapshot, from yesterday&#039;s close), 2026-07-11, 2026-07-10, … back to the earliest stored snapshot (today&#039;s data is not in the list yet because market hasn&#039;t closed).</div></div><div class="ex-refs">Pins claims: U2, U3, U7</div><textarea class="ex-note" name="exnote-E1" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-example" data-id="E2" data-example="Given Operator has the Vega Lead page open and it&#039;s now 16:00 IST (after market close at 15:35 IST). A new snapshot for 2026-07-13 has just been written to Postgres by `SnapshotDailyVegaFlowIfDueAsync()`.; When The page polls `history-dates` (every 60s) on its next refresh cycle.; Then The dropdown now includes 2026-07-13 at the top (most recent first). If the operator&#039;s `selectedDate` was still pointing to the old most-recent (2026-07-12), it should NOT auto-update (by design: lines 40–42); the operator remains on 2026-07-12 until they manually switch to the new date."><div class="ex-head"><span class="badge kind-example">E2 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> Operator has the Vega Lead page open and it&#039;s now 16:00 IST (after market close at 15:35 IST). A new snapshot for 2026-07-13 has just been written to Postgres by `SnapshotDailyVegaFlowIfDueAsync()`.</div><div><span class="gwt-k">When</span> The page polls `history-dates` (every 60s) on its next refresh cycle.</div><div><span class="gwt-k">Then</span> The dropdown now includes 2026-07-13 at the top (most recent first). If the operator&#039;s `selectedDate` was still pointing to the old most-recent (2026-07-12), it should NOT auto-update (by design: lines 40–42); the operator remains on 2026-07-12 until they manually switch to the new date.</div></div><div class="ex-refs">Pins claims: U3</div><textarea class="ex-note" name="exnote-E2" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-example" data-id="E3" data-example="Given 30-day auto-retention is enabled. The database contains snapshots from 2026-06-13 (30 days ago) through 2026-07-13 (today).; When A background cleanup job runs nightly (e.g., at 00:00 IST, after market close on 2026-07-14).; Then Any snapshot with `TradingDate` older than 2026-06-14 is hard-deleted from Postgres. The 2026-06-13 snapshot no longer exists; `history-dates` endpoint no longer returns it."><div class="ex-head"><span class="badge kind-example">E3 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> 30-day auto-retention is enabled. The database contains snapshots from 2026-06-13 (30 days ago) through 2026-07-13 (today).</div><div><span class="gwt-k">When</span> A background cleanup job runs nightly (e.g., at 00:00 IST, after market close on 2026-07-14).</div><div><span class="gwt-k">Then</span> Any snapshot with `TradingDate` older than 2026-06-14 is hard-deleted from Postgres. The 2026-06-13 snapshot no longer exists; `history-dates` endpoint no longer returns it.</div></div><div class="ex-refs">Pins claims: U4</div><textarea class="ex-note" name="exnote-E3" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-example" data-id="E4" data-example="Given 30-day auto-retention is NOT enabled (snapshots kept indefinitely). Operator had the page open on 2026-06-13 and bookmarked the URL. They return to the page on 2026-07-13.; When They click the date dropdown.; Then They can still select 2026-06-13 (or any historical date going back months/years) because the row was never deleted. The snapshot still exists in Postgres and loads correctly."><div class="ex-head"><span class="badge kind-example">E4 · must happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> 30-day auto-retention is NOT enabled (snapshots kept indefinitely). Operator had the page open on 2026-06-13 and bookmarked the URL. They return to the page on 2026-07-13.</div><div><span class="gwt-k">When</span> They click the date dropdown.</div><div><span class="gwt-k">Then</span> They can still select 2026-06-13 (or any historical date going back months/years) because the row was never deleted. The snapshot still exists in Postgres and loads correctly.</div></div><div class="ex-refs">Pins claims: U2, U4</div><textarea class="ex-note" name="exnote-E4" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-counter" data-id="E5" data-example="Given The date dropdown is small, defaults to most recent, and sits in the top-right corner of VegaLeadView.; When A new operator opens the Vega Lead page for the first time.; Then They may not realize the dropdown is interactive or that it contains historical data. They think they&#039;re only seeing the latest snapshot, even though dates back 30+ days are listed in the dropdown."><div class="ex-head"><span class="badge kind-counter">E5 · must NOT happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> The date dropdown is small, defaults to most recent, and sits in the top-right corner of VegaLeadView.</div><div><span class="gwt-k">When</span> A new operator opens the Vega Lead page for the first time.</div><div><span class="gwt-k">Then</span> They may not realize the dropdown is interactive or that it contains historical data. They think they&#039;re only seeing the latest snapshot, even though dates back 30+ days are listed in the dropdown.</div></div><div class="ex-refs">Pins claims: U5</div><textarea class="ex-note" name="exnote-E5" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+<div class="card example-card ex-counter" data-id="E6" data-example="Given 30-day auto-retention is enabled with hard-delete. A snapshot from 2026-06-14 is being deleted at 00:00 IST on 2026-07-14.; When An operator is currently viewing that 2026-06-14 snapshot page and the delete finishes mid-session.; Then The operator&#039;s `selectedDate` still references 2026-06-14, but the next time they try to load fresh data for that date, the API returns 404 or null (row no longer exists). The current chart doesn&#039;t break, but a refresh would fail."><div class="ex-head"><span class="badge kind-counter">E6 · must NOT happen</span><div class="verdict-group ex-verdict"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Right — this is the behaviour I want">✓</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong outcome">✗</button></div></div><div class="ex-gwt"><div><span class="gwt-k">Given</span> 30-day auto-retention is enabled with hard-delete. A snapshot from 2026-06-14 is being deleted at 00:00 IST on 2026-07-14.</div><div><span class="gwt-k">When</span> An operator is currently viewing that 2026-06-14 snapshot page and the delete finishes mid-session.</div><div><span class="gwt-k">Then</span> The operator&#039;s `selectedDate` still references 2026-06-14, but the next time they try to load fresh data for that date, the API returns 404 or null (row no longer exists). The current chart doesn&#039;t break, but a refresh would fail.</div></div><div class="ex-refs">Pins claims: U4</div><textarea class="ex-note" name="exnote-E6" rows="2" placeholder="What should the outcome be instead?" hidden></textarea></div>
+      </section>
+
+      <section id="s5">
+        <h2>5 · Understanding Checklist — Confirm, Correct, or Fork Each Claim</h2>
+        <div class="card">
+          <p class="u-hint">
+            Each row is one claim I hold about your concept or your code. Mark it
+            ✓ correct, ≈ partly right, or ✗ wrong (and pick the right answer or
+            leave a note). Some rows are <strong>forks</strong> — I read them more
+            than one way, so choose the intended reading. Rows flagged
+            <strong>high stakes</strong> matter most: confirm those first. If I
+            missed something entirely, add it with the button below the table.
+          </p>
+          <div class="table-wrap">
+            <table id="u-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Area</th>
+                  <th>What I Understand</th>
+                  <th>Source</th>
+                  <th>Confidence</th>
+                  <th>Your Verdict</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-id="U1" data-statement="The user wants a 30-day rolling window of daily vega-flow snapshots to be available and discoverable on the Vega Lead page."><td>U1</td><td>Concept</td><td class="u-statement"><div>The user wants a 30-day rolling window of daily vega-flow snapshots to be available and discoverable on the Vega Lead page.</div><div class="u-impact">⚠ If wrong: Determines whether this is UI/discoverability work or a data retention policy change</div></td><td><span class="badge src-user">you said</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U1" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U2" data-statement="Daily vega-flow snapshots are persisted to Postgres `VegaFlowDailySnapshots` table once per trading day at market close (15:30 IST), with no auto-expiry or retention limit."><td>U2</td><td>Code</td><td class="u-statement"><div>Daily vega-flow snapshots are persisted to Postgres `VegaFlowDailySnapshots` table once per trading day at market close (15:30 IST), with no auto-expiry or retention limit.</div><div class="u-evidence">📎 ChainAnalysisService.cs:205–244 (VegaFlowDailySnapshot entity, SnapshotDailyVegaFlowIfDueAsync); VegaLeadView.tsx:12 comment &#039;kept forever until the operator deletes them manually&#039;</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U2" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U3" data-statement="The VegaLeadView UI already renders a date dropdown populated by `/api/v1/analysis/vega-flow/history-dates` that lists every archived date, most recent first."><td>U3</td><td>Code</td><td class="u-statement"><div>The VegaLeadView UI already renders a date dropdown populated by `/api/v1/analysis/vega-flow/history-dates` that lists every archived date, most recent first.</div><div class="u-evidence">📎 VegaLeadView.tsx:62–74 (date dropdown); AnalysisController.cs (history-dates endpoint returns all persisted dates)</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U3" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U4" data-statement="Implement a 30-day auto-retention policy: delete snapshots older than 30 calendar days automatically." data-fork="true" data-priority="high"><td>U4</td><td>Change</td><td class="u-statement"><div>Implement a 30-day auto-retention policy: delete snapshots older than 30 calendar days automatically.</div><div class="u-impact">⚠ If wrong: Affects database cleanup, API query filters, and whether a migration is needed.</div><div class="fork-hint">I can read this more than one way — pick the intended one:</div><div class="priority-flag">⚠ high stakes · confirm first</div></td><td><span class="badge src-inferred">inferred</span></td><td><span class="badge conf-medium">medium</span></td><td class="u-verdict u-fork"><label class="fork-opt"><input type="radio" name="fork-U4" value="0"><span>Auto-delete snapshots older than 30 days</span></label><label class="fork-opt"><input type="radio" name="fork-U4" value="1"><span>Keep all snapshots but query/display only the most recent 30 days in the UI (no deletion)</span></label><label class="fork-opt"><input type="radio" name="fork-U4" value="2"><span>Add a 30-day retention option the operator can toggle on/off</span></label><label class="fork-opt fork-neither"><input type="radio" name="fork-U4" value="neither"><span>neither — I'll explain</span></label><textarea class="u-note" name="note-U4" rows="2" placeholder="The right reading is…" hidden></textarea></td></tr>
+<tr data-id="U5" data-statement="Improve discoverability of historical snapshots: make the date picker more prominent or add a &#039;browse history&#039; view." data-fork="true" data-priority="high"><td>U5</td><td>Change</td><td class="u-statement"><div>Improve discoverability of historical snapshots: make the date picker more prominent or add a &#039;browse history&#039; view.</div><div class="u-impact">⚠ If wrong: Affects frontend UX, may require new endpoint(s) to fetch multiple snapshots at once.</div><div class="fork-hint">I can read this more than one way — pick the intended one:</div><div class="priority-flag">⚠ high stakes · confirm first</div></td><td><span class="badge src-inferred">inferred</span></td><td><span class="badge conf-medium">medium</span></td><td class="u-verdict u-fork"><label class="fork-opt"><input type="radio" name="fork-U5" value="0"><span>Make the date dropdown more visually prominent (e.g., larger font, different position)</span></label><label class="fork-opt"><input type="radio" name="fork-U5" value="1"><span>Add a separate &#039;history&#039; tab or page showing all 30 days in a grid/timeline</span></label><label class="fork-opt"><input type="radio" name="fork-U5" value="2"><span>Add a 30-day trend view that overlays all recent snapshots on one chart</span></label><label class="fork-opt"><input type="radio" name="fork-U5" value="3"><span>Add a calendar widget to pick dates (instead of a flat dropdown)</span></label><label class="fork-opt fork-neither"><input type="radio" name="fork-U5" value="neither"><span>neither — I'll explain</span></label><textarea class="u-note" name="note-U5" rows="2" placeholder="The right reading is…" hidden></textarea></td></tr>
+<tr data-id="U6" data-statement="The scope includes the VegaLeadView page (&#039;Vega Lead&#039; in the UI) and its interaction with the backend vega-flow history endpoints."><td>U6</td><td>Scope</td><td class="u-statement"><div>The scope includes the VegaLeadView page (&#039;Vega Lead&#039; in the UI) and its interaction with the backend vega-flow history endpoints.</div><div class="u-impact">⚠ If wrong: Clarifies that the Option Chain view (ChainAnalysisView intraday chart) is NOT in scope.</div></td><td><span class="badge src-user">you said</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U6" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U7" data-statement="Daily snapshots only become selectable after market close (15:30 IST); the snapshot row is written by `SnapshotDailyVegaFlowIfDueAsync()` which runs in the API and checks `IsTimeForSnapshot()` (MarketCloseHm=1530)."><td>U7</td><td>Code</td><td class="u-statement"><div>Daily snapshots only become selectable after market close (15:30 IST); the snapshot row is written by `SnapshotDailyVegaFlowIfDueAsync()` which runs in the API and checks `IsTimeForSnapshot()` (MarketCloseHm=1530).</div><div class="u-evidence">📎 ChainAnalysisService.cs:87, 213–244; VegaLeadView.tsx:10–13 comment</div><div class="u-impact">⚠ If wrong: Auto-expiry logic must account for IST timezone and market-close timing.</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U7" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U8" data-statement="Intraday vega-flow points are stored separately in Redis (`chain:vegaflow:yyyyMMdd`) with 30-hour TTL; daily snapshots in Postgres are independent and survive Redis expiry."><td>U8</td><td>Code</td><td class="u-statement"><div>Intraday vega-flow points are stored separately in Redis (`chain:vegaflow:yyyyMMdd`) with 30-hour TTL; daily snapshots in Postgres are independent and survive Redis expiry.</div><div class="u-evidence">📎 ChainAnalysisService.cs:156–188 (Redis list); Entities.cs (VegaFlowDailySnapshot DB table)</div><div class="u-impact">⚠ If wrong: Retention changes affect only Postgres, not Redis. Daily snapshots are archival, not live.</div></td><td><span class="badge src-code">in code</span></td><td><span class="badge conf-high">high</span></td><td class="u-verdict"><div class="verdict-group"><button type="button" class="verdict-btn v-yes" data-verdict="yes" title="Correct">✓</button><button type="button" class="verdict-btn v-partly" data-verdict="partly" title="Partly right">≈</button><button type="button" class="verdict-btn v-no" data-verdict="no" title="Wrong">✗</button></div><div class="u-correction" hidden><textarea class="u-note" name="note-U8" rows="2" placeholder="What's off? Correct me…"></textarea></div></td></tr>
+<tr data-id="U9" data-statement="If 30-day retention is chosen, the API must filter snapshots older than 30 days when returning `history-dates`, and a background cleanup job must delete old rows from `VegaFlowDailySnapshots`." data-fork="true" data-priority="high"><td>U9</td><td>Change</td><td class="u-statement"><div>If 30-day retention is chosen, the API must filter snapshots older than 30 days when returning `history-dates`, and a background cleanup job must delete old rows from `VegaFlowDailySnapshots`.</div><div class="u-impact">⚠ If wrong: Affects API endpoint logic, database queries, and whether a new hosted service or cron job is needed.</div><div class="fork-hint">I can read this more than one way — pick the intended one:</div><div class="priority-flag">⚠ high stakes · confirm first</div></td><td><span class="badge src-inferred">inferred</span></td><td><span class="badge conf-medium">medium</span></td><td class="u-verdict u-fork"><label class="fork-opt"><input type="radio" name="fork-U9" value="0"><span>Implement hard-delete at query time (no DB cleanup, just skip old rows in API response)</span></label><label class="fork-opt"><input type="radio" name="fork-U9" value="1"><span>Implement soft-delete with a retention column; queries filter by date</span></label><label class="fork-opt"><input type="radio" name="fork-U9" value="2"><span>Implement a scheduled background task (e.g., hosted service) to hard-delete nightly</span></label><label class="fork-opt fork-neither"><input type="radio" name="fork-U9" value="neither"><span>neither — I'll explain</span></label><textarea class="u-note" name="note-U9" rows="2" placeholder="The right reading is…" hidden></textarea></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="add-claim-row">
+            <button type="button" id="add-claim-btn" class="ghost-btn">
+              ＋ Add a claim I missed
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="s6">
+        <h2>6 · Tensions — What You Want vs. What the Code Allows</h2>
+        <p class="u-hint">
+          Reading the code, I found places where your intent and the current
+          reality pull against each other. Rather than silently pick for you, I'm
+          surfacing them: choose how each should resolve. An unresolved tension is
+          a likely source of a surprise later.
+        </p>
+        <div class="card tension-card" data-id="T1" data-summary="30 days of snapshots stored and visible — vs — Snapshots are stored indefinitely with no auto-expiry; deletion is manual. This is by design (&#039;kept forever until the operator deletes them manually&#039;)."><div class="tension-head"><span class="badge tension-badge">T1</span> Tension I found</div><div class="tension-cols"><div class="tension-col want"><h4>You want</h4><p>30 days of snapshots stored and visible</p></div><div class="tension-col code"><h4>But the code…</h4><p>Snapshots are stored indefinitely with no auto-expiry; deletion is manual. This is by design (&#039;kept forever until the operator deletes them manually&#039;).</p><div class="u-evidence">📎 VegaLeadView.tsx:12; ChainAnalysisService.cs:205–244 (no expiry logic in entity or migrations)</div></div></div><div class="tension-rec"><strong>My recommendation:</strong> Query-time filtering (option 2) is lowest-risk: no data loss, backward compatible. If the operator routinely reviews &gt;30 days back, keeping history is better; if they only care about recent trends, filtering is sufficient. Clarify: do you ever look back &gt;30 days?</div><div class="tension-resolve"><span class="resolve-label">Your call:</span><label class="tension-opt"><input type="radio" name="tension-T1" value="0"><span>Change the storage model: implement 30-day auto-retention with hard-delete</span></label><label class="tension-opt"><input type="radio" name="tension-T1" value="1"><span>Keep the storage model (indefinite) but filter UI to show only last 30 days (API query-time filtering only)</span></label><label class="tension-opt"><input type="radio" name="tension-T1" value="2"><span>Add a configurable retention policy (e.g., via Fund settings or env var) defaulting to 30 days</span></label><label class="tension-opt"><input type="radio" name="tension-T1" value="other"><span>other →</span></label><textarea class="t-note" name="tnote-T1" rows="2" placeholder="How we should resolve it…" hidden></textarea></div></div>
+<div class="card tension-card" data-id="T2" data-summary="All previous snapshots visible from the Vega Lead page — vs — The date dropdown already lists all snapshots (via history-dates endpoint), but it&#039;s small, defaults to &#039;today&#039;, and isn&#039;t obviously a browsable archive."><div class="tension-head"><span class="badge tension-badge">T2</span> Tension I found</div><div class="tension-cols"><div class="tension-col want"><h4>You want</h4><p>All previous snapshots visible from the Vega Lead page</p></div><div class="tension-col code"><h4>But the code…</h4><p>The date dropdown already lists all snapshots (via history-dates endpoint), but it&#039;s small, defaults to &#039;today&#039;, and isn&#039;t obviously a browsable archive.</p><div class="u-evidence">📎 VegaLeadView.tsx:62–74 (date dropdown is &lt;select&gt;, not prominent); lines 40–42 (auto-selects most recent on load)</div></div></div><div class="tension-rec"><strong>My recommendation:</strong> Start with UI visibility (option 1): enlarge and reposition the dropdown, rename it to &#039;Browse archived sessions&#039; or &#039;Trading session history&#039;. This is a low-cost UX win and reveals whether the current feature was just undiscovered. If users still want more, layer in option 2 (grid/timeline view) or option 4 (multi-day overlay chart).</div><div class="tension-resolve"><span class="resolve-label">Your call:</span><label class="tension-opt"><input type="radio" name="tension-T2" value="0"><span>Make the date dropdown more visually prominent (larger, relocated, renamed)</span></label><label class="tension-opt"><input type="radio" name="tension-T2" value="1"><span>Add a separate &#039;Browse History&#039; tab or section listing all 30 days with mini-previews</span></label><label class="tension-opt"><input type="radio" name="tension-T2" value="2"><span>Add a calendar/date-range picker for easier navigation</span></label><label class="tension-opt"><input type="radio" name="tension-T2" value="3"><span>Add a &#039;Show all 30 days&#039; button that loads and overlays all snapshots on one chart</span></label><label class="tension-opt"><input type="radio" name="tension-T2" value="other"><span>other →</span></label><textarea class="t-note" name="tnote-T2" rows="2" placeholder="How we should resolve it…" hidden></textarea></div></div>
+<div class="card tension-card" data-id="T3" data-summary="Snapshots available &#039;all the way till 30 days&#039; — vs — Today&#039;s snapshot doesn&#039;t exist in Postgres until after 15:30 IST; `selectedDate` defaults to `dates[0]` (most recent), which is typically yesterday or earlier."><div class="tension-head"><span class="badge tension-badge">T3</span> Tension I found</div><div class="tension-cols"><div class="tension-col want"><h4>You want</h4><p>Snapshots available &#039;all the way till 30 days&#039;</p></div><div class="tension-col code"><h4>But the code…</h4><p>Today&#039;s snapshot doesn&#039;t exist in Postgres until after 15:30 IST; `selectedDate` defaults to `dates[0]` (most recent), which is typically yesterday or earlier.</p><div class="u-evidence">📎 VegaLeadView.tsx:40–42, 10–13 comment (&#039;today&#039;s row doesn&#039;t exist until after the close&#039;)</div></div></div><div class="tension-rec"><strong>My recommendation:</strong> Assume Postgres snapshots only (option 3) unless you specifically want intraday Redis data in the history view. Intraday and archived are currently separate UX surfaces (ChainAnalysisView vs VegaLeadView) for good reason.</div><div class="tension-resolve"><span class="resolve-label">Your call:</span><label class="tension-opt"><input type="radio" name="tension-T3" value="0"><span>Clarify: do you mean today&#039;s intraday data (Redis, live) or today&#039;s snapshot (Postgres, after close)?</span></label><label class="tension-opt"><input type="radio" name="tension-T3" value="1"><span>Include today&#039;s intraday Redis vega-flow in the 30-day window if it&#039;s within market hours (09:10–15:35 IST)</span></label><label class="tension-opt"><input type="radio" name="tension-T3" value="2"><span>Only count complete trading-day snapshots (Postgres, post-close)</span></label><label class="tension-opt"><input type="radio" name="tension-T3" value="other"><span>other →</span></label><textarea class="t-note" name="tnote-T3" rows="2" placeholder="How we should resolve it…" hidden></textarea></div></div>
+      </section>
+
+      <section id="s7">
+        <h2>7 · Scope Boundaries</h2>
+        <div class='card'><h3>Scope Boundaries</h3><p><strong>In Scope:</strong></p><ul><li>VegaLeadView page and its date navigation/selection UX</li><li>Backend vega-flow history API endpoints (<code>/history-dates</code>, <code>/history/{date}</code>)</li><li>Snapshot retention policy (30-day window, auto-cleanup if desired)</li><li>Database query filtering to respect the 30-day boundary</li><li>Possible new API endpoint(s) if multi-day history view is added (e.g., <code>/history-range/{from}/{to}</code>)</li></ul><p><strong>Out of Scope:</strong></p><ul><li>ChainAnalysisView (Option Chain page intraday chart) — unchanged</li><li>Redis intraday vega-flow storage or TTL — unchanged</li><li>MarketDataWorker sampling logic — unchanged</li><li>Kite broker integration — unchanged</li><li>Daily snapshot archival timing (still at 15:30 IST) — unchanged unless operator requests</li><li>Vega-flow calculation or signal logic — unchanged</li></ul></div>
+      </section>
+
+      <section id="s8">
+        <h2>8 · Open Questions</h2>
+        <div class="card">
+          <p class="u-hint">Answers typed here are included in the copied review.</p>
+          <div class="table-wrap">
+            <table id="oq-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Question</th>
+                  <th>Why it Matters</th>
+                  <th>Proposed Default</th>
+                  <th>Status</th>
+                  <th>Your Answer</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-id="OQ1"><td>OQ1</td><td>Do you want a hard 30-day retention policy with automatic deletion, or just a 30-day window visible in the UI while keeping all data in the database?</td><td>Determines whether we need to implement deletion logic and handle edge cases (operator viewing a snapshot that gets deleted). Indefinite retention is safer for compliance/auditability; 30-day deletion saves database space.</td><td>30-day UI filtering only (no deletion): visible last 30 days, keep all data indefinitely. Lowest risk, maintains auditability.</td><td>Open</td><td><textarea class="oq-answer" name="answer-OQ1" rows="2" placeholder="Type your answer…"></textarea></td></tr>
+<tr data-id="OQ2"><td>OQ2</td><td>Is the issue that the date dropdown is hard to discover, or do you also want a richer history view (e.g., a calendar, grid of mini-charts, or an overlaid multi-day chart)?</td><td>A simple UI improvement (enlarge/relocate dropdown) vs a new page/component is a big difference in scope. Overlaying all 30 days on one chart is useful for trend spotting but requires fetching all snapshots at once.</td><td>Improve dropdown visibility first; measure user feedback before adding richer views.</td><td>Open</td><td><textarea class="oq-answer" name="answer-OQ2" rows="2" placeholder="Type your answer…"></textarea></td></tr>
+<tr data-id="OQ3"><td>OQ3</td><td>Should the Vega Lead page include today&#039;s intraday data (live Redis vega-flow, updated ~60s) in the 30-day history, or only completed daily snapshots (Postgres, written once at market close)?</td><td>Intraday data is already shown in the Option Chain page&#039;s live ChainAnalysisView. Including it in VegaLeadView as well could cause duplication or confusion (live updates vs archived). Keeping them separate clarifies the two surfaces.</td><td>Only Postgres snapshots (completed trading days, post-close). Intraday remains in ChainAnalysisView.</td><td>Open</td><td><textarea class="oq-answer" name="answer-OQ3" rows="2" placeholder="Type your answer…"></textarea></td></tr>
+<tr data-id="OQ4"><td>OQ4</td><td>If we implement 30-day deletion, when should the cleanup job run, and should it account for holidays/non-trading days?</td><td>Running at 00:00 IST (before market opens) is simple but may delete a snapshot needed by an early morning operator. Running post-close (15:45 IST) is safer. Holiday handling avoids deleting a snapshot from Friday afternoon until Tuesday (skip Mon if it&#039;s a holiday).</td><td>Nightly at 23:59 IST (just before midnight IST / early morning UTC). Simplest; adjust if operators report conflicts.</td><td>Open</td><td><textarea class="oq-answer" name="answer-OQ4" rows="2" placeholder="Type your answer…"></textarea></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="s9">
+        <h2>9 · Risks &amp; Sharp Edges</h2>
+        <div class='card'><h3>Risks & Sharp Edges</h3><table style='width:100%; border-collapse: collapse;'><tr style='border-bottom: 1px solid #ccc;'><th style='padding: 8px; text-align: left;'>Risk</th><th style='padding: 8px; text-align: left;'>Likelihood</th><th style='padding: 8px; text-align: left;'>Impact</th><th style='padding: 8px; text-align: left;'>Mitigation</th></tr><tr style='border-bottom: 1px solid #ccc;'><td style='padding: 8px;'><strong>Operator bookmarks old date</strong> (if hard-delete enabled): They click an old link/bookmark, API returns 404.</td><td style='padding: 8px;'>Medium</td><td style='padding: 8px;'>High</td><td style='padding: 8px;'>Query-time filtering only (Option A) avoids this. Or: handle 404 gracefully in VegaLeadView, fall back to most recent available date.</td></tr><tr style='border-bottom: 1px solid #ccc;'><td style='padding: 8px;'><strong>Date dropdown is still missed</strong> after UI improvements: UX is good but operator doesn't know it exists.</td><td style='padding: 8px;'>Medium (depends on visibility change magnitude)</td><td style='padding: 8px;'>Low</td><td style='padding: 8px;'>Add on-screen tooltip or label like 'Browse 30 days of history'. Measure engagement post-launch.</td></tr><tr style='border-bottom: 1px solid #ccc;'><td style='padding: 8px;'><strong>Timezone bug in cleanup job</strong> (if hard-delete): '30 days old' calculated in UTC instead of IST, deletes one day early/late.</td><td style='padding: 8px;'>Medium (timezone bugs are common)</td><td style='padding: 8px;'>High</td><td style='padding: 8px;'>Use IST explicitly in cleanup query: <code>TradingDate < DateOnly.FromDateTime(DateTime.Now.AddDays(-30).ToUniversalTime().AddHours(5.5))</code> or store TradingDate as DateOnly (IST midnight).</td></tr><tr style='border-bottom: 1px solid #ccc;'><td style='padding: 8px;'><strong>Cleanup job doesn't run on holidays</strong>: No deletion happens if the hosted service crashes or doesn't start after restarts.</td><td style='padding: 8px;'>Low–Medium</td><td style='padding: 8px;'>Low (eventual consistency)</td><td style='padding: 8px;'>Monitor the cleanup job with an alert if it hasn't run in 36 hours. Implement idempotent logic so it's safe to retry.</td></tr><tr style='border-bottom: 1px solid #ccc;'><td style='padding: 8px;'><strong>Multi-day overlay chart (if added)</strong>: Fetching 30 snapshots at once and rendering overlaid lines is computationally expensive.</td><td style='padding: 8px;'>Medium</td><td style='padding: 8px;'>Medium</td><td style='padding: 8px;'>Add pagination, lazy-load, or request a 7-day subset instead of 30. Profile before launch.</td></tr><tr style='border-bottom: 1px solid #ccc;'><td style='padding: 8px;'><strong>Intraday + snapshot confusion</strong> (related to T3): Operator expects today's live vega-flow in VegaLeadView archive, is confused when it's missing until after 15:30 IST.</td><td style='padding: 8px;'>Low–Medium</td><td style='padding: 8px;'>Low</td><td style='padding: 8px;'>UI label should say 'Archived daily snapshots (written at market close)'. Link to ChainAnalysisView for intraday data.</td></tr></table></div>
+      </section>
+
+      <section id="s10">
+        <h2>10 · Implementation Sketch (Non-Binding)</h2>
+        <div class='card'><h3>Implementation Sketch (Non-Binding)</h3><p><strong>Step 1: UI Improvement (Low Risk)</strong></p><ol><li>Enlarge and reposition the date dropdown in VegaLeadView (e.g., center it below title, make font larger).</li><li>Rename it from generic 'Select date' to 'Browse trading history (30 days)'.</li><li>Add a help text: 'Snapshots are archived once per trading day at 15:30 IST. Today's intraday data is in the Option Chain view.'</li><li>Test that the dropdown still works with long date lists and renders responsively.</li></ol><p><strong>Step 2: Backend Filtering (Medium Risk, if 30-day limit desired)</strong></p><ol><li>Modify <code>AnalysisController.GetVegaFlowHistoryDates()</code> to filter the returned list: <code>WHERE TradingDate >= DateOnly.FromDateTime(DateTime.Now.AddDays(-30))</code>.</li><li>Update API docs to clarify the 30-day window.</li><li>Test that the endpoint returns ~20–22 dates for a month of trading data.</li><li>Test edge cases: first week of data (fewer than 30 days available), after holidays (non-consecutive dates).</li></ol><p><strong>Step 3: Optional Cleanup Job (Higher Risk, if hard-delete desired)</strong></p><ol><li>Create a new hosted service <code>VegaSnapshotCleanupService</code> in ThetaDesk.Workers (or ThetaDesk.Api if workers not available).</li><li>Implement a periodic task (e.g., every 24h at 23:59 IST) that deletes rows: <code>DELETE FROM VegaFlowDailySnapshots WHERE TradingDate < Now - 30 days</code>.</li><li>Make it idempotent (safe to run multiple times per day).</li><li>Add logging and optional alert if deletion fails.</li><li>Validate timezone correctness: TradingDate is a DateOnly in IST, so ensure the comparison is in IST too.</li></ol><p><strong>Step 4: Optional UI Richness (Lower Priority)</strong></p><ol><li>If operators request deeper history browsing, add a new endpoint: <code>GET /api/v1/analysis/vega-flow/history-range/{fromDate}/{toDate}</code> to fetch multiple snapshots at once.</li><li>Add a 'History Grid' or 'Timeline' view in VegaLeadView that shows mini-charts or a trend line across all 30 days.</li><li>Use pagination or lazy-loading to avoid fetching all 30 snapshots on page load.</li></ol><p><strong>Step 5: Testing & Validation</strong></p><ol><li>Unit test the date filtering logic and cleanup query with various date ranges and timezone scenarios.</li><li>Integration test: mock market close, verify snapshot is written, verify it appears in history-dates within 2 minutes.</li><li>Manual test: open VegaLeadView at 14:00 IST (before close), verify today is not in dropdown; come back at 16:00 IST (after close), verify it appears.</li><li>Cleanup validation: manually insert old rows, run cleanup job, verify deletion and no newer rows are harmed.</li></ol></div>
+      </section>
+    </main>
+
+    <div
+      id="sync-widget"
+      data-doc="30-Day Vega Snapshot Retention &amp; Visibility"
+      data-version="v1"
+      data-status="DRAFT"
+    >
+      <div class="sync-title">Understanding sync</div>
+      <div class="sync-counts">
+        <span id="sync-confirmed">0</span> agreed ·
+        <span id="sync-flagged">0</span> to fix ·
+        <span id="sync-pending">0</span> pending
+      </div>
+      <div class="sync-bar"><div id="sync-bar-fill"></div></div>
+      <div id="sync-gate" class="sync-gate">Review the claims above</div>
+      <button type="button" id="copy-review-btn" class="copy-qa-btn">
+        📋 Copy review for the AI
+      </button>
+    </div>
+
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "default",
+        securityLevel: "loose",
+      });
+    </script>
+
+    <script>
+      const toc = document.getElementById("toc");
+      const sections = document.querySelectorAll('section[id^="s"]');
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const id = entry.target.id;
+              const link = toc.querySelector(`a[href="#${id}"]`);
+              toc
+                .querySelectorAll("a")
+                .forEach((a) => a.classList.remove("active"));
+              if (link) link.classList.add("active");
+            }
+          });
+        },
+        { threshold: 0.3, rootMargin: "-50% 0px -50% 0px" },
+      );
+
+      sections.forEach((section) => observer.observe(section));
+
+      toc.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          const target = document.querySelector(link.getAttribute("href"));
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      });
+    </script>
+
+    <script>
+      document.querySelectorAll("table").forEach((table) => {
+        if (table.closest(".table-wrap")) return;
+        const wrap = document.createElement("div");
+        wrap.className = "table-wrap";
+        table.parentNode.insertBefore(wrap, table);
+        wrap.appendChild(table);
+      });
+    </script>
+
+    <script>
+      (function () {
+        const backdrop = document.createElement("div");
+        backdrop.className = "diagram-backdrop";
+        document.body.appendChild(backdrop);
+
+        let activeCard = null;
+
+        function minimize(card) {
+          card.classList.remove("diagram-maximized");
+          const btn = card.querySelector(".diagram-toggle-btn");
+          if (btn) {
+            btn.textContent = "⛶";
+            btn.title = "Maximize diagram";
+          }
+          backdrop.classList.remove("active");
+          document.body.classList.remove("diagram-lock");
+          activeCard = null;
+        }
+
+        function maximize(card) {
+          if (activeCard && activeCard !== card) minimize(activeCard);
+          card.classList.add("diagram-maximized");
+          const btn = card.querySelector(".diagram-toggle-btn");
+          if (btn) {
+            btn.textContent = "✕";
+            btn.title = "Minimize diagram";
+          }
+          backdrop.classList.add("active");
+          document.body.classList.add("diagram-lock");
+          activeCard = card;
+        }
+
+        document.querySelectorAll("div.mermaid").forEach((diagram) => {
+          let card = diagram.closest(".mermaid-card");
+          if (!card) {
+            card = document.createElement("div");
+            card.className = "mermaid-card";
+            diagram.parentNode.insertBefore(card, diagram);
+            card.appendChild(diagram);
+          }
+          if (card.querySelector(".diagram-toggle-btn")) return;
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "diagram-toggle-btn";
+          btn.textContent = "⛶";
+          btn.title = "Maximize diagram";
+          btn.addEventListener("click", () => {
+            if (card.classList.contains("diagram-maximized")) {
+              minimize(card);
+            } else {
+              maximize(card);
+            }
+          });
+          card.appendChild(btn);
+        });
+
+        backdrop.addEventListener("click", () => {
+          if (activeCard) minimize(activeCard);
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && activeCard) minimize(activeCard);
+        });
+      })();
+    </script>
+
+    <script>
+      // Co-authoring engine: verdicts, forks, structured corrections, added
+      // claims, tension resolutions, example sign-off, recall, live sync, and
+      // the review export. All state persists per browser keyed by doc+version.
+      (function () {
+        const widget = document.getElementById("sync-widget");
+        if (!widget) return;
+
+        const docName = widget.dataset.doc || "";
+        const docVersion = widget.dataset.version || "";
+        const docStatus = widget.dataset.status || "";
+        const storeKey = "arch-review:" + docName + ":" + docVersion;
+
+        const state = load();
+        state.recall = state.recall || "";
+        state.claims = state.claims || {};
+        state.added = Array.isArray(state.added) ? state.added : [];
+        state.tensions = state.tensions || {};
+        state.examples = state.examples || {};
+        state.answers = state.answers || {};
+
+        function load() {
+          try {
+            return JSON.parse(localStorage.getItem(storeKey)) || {};
+          } catch (e) {
+            return {};
+          }
+        }
+        function save() {
+          try {
+            localStorage.setItem(storeKey, JSON.stringify(state));
+          } catch (e) {
+            /* private mode: review still works, just not persisted */
+          }
+        }
+        const txt = (el) => (el ? el.value.trim() : "");
+        const setText = (sel, val) => {
+          const el = document.querySelector(sel);
+          if (el) el.textContent = val;
+        };
+
+        // ---------- Recall / success statement ----------
+        const recall = document.getElementById("recall-box");
+        if (recall) {
+          recall.value = state.recall;
+          recall.addEventListener("input", () => {
+            state.recall = recall.value;
+            save();
+          });
+        }
+
+        // ---------- Understanding rows ----------
+        const uTableBody = document.querySelector("#u-table tbody");
+        const claimRows = () =>
+          Array.from(document.querySelectorAll("#u-table tbody tr[data-id]"));
+
+        function rowState(row) {
+          if (row.dataset.fork === "true") {
+            const c = row.dataset.forkChoice;
+            if (c && c !== "neither") return "agreed";
+            if (c === "neither") return "flagged";
+            return "pending";
+          }
+          const v = row.dataset.verdict;
+          if (v === "yes") return "agreed";
+          if (v === "no" || v === "partly") return "flagged";
+          return "pending";
+        }
+        function paintRow(row) {
+          row.dataset.state = rowState(row);
+        }
+
+        function applyVerdict(row, verdict) {
+          if (verdict) row.dataset.verdict = verdict;
+          else row.removeAttribute("data-verdict");
+          row.querySelectorAll(".verdict-btn").forEach((b) => {
+            b.classList.toggle("selected", b.dataset.verdict === verdict);
+          });
+          const correction = row.querySelector(".u-correction");
+          if (correction)
+            correction.hidden = !(verdict === "no" || verdict === "partly");
+          paintRow(row);
+        }
+
+        function wireClaim(row) {
+          const id = row.dataset.id;
+          const note = row.querySelector(".u-note");
+
+          if (row.dataset.fork === "true") {
+            row.querySelectorAll('input[type="radio"]').forEach((radio) => {
+              radio.addEventListener("change", () => {
+                row.dataset.forkChoice = radio.value;
+                if (note) note.hidden = radio.value !== "neither";
+                state.claims[id] = { fork: radio.value, note: txt(note) };
+                paintRow(row);
+                save();
+                refresh();
+              });
+            });
+            if (note)
+              note.addEventListener("input", () => {
+                state.claims[id] = {
+                  fork: row.dataset.forkChoice || "",
+                  note: note.value,
+                };
+                save();
+              });
+            const s = state.claims[id];
+            if (s && s.fork) {
+              row.querySelectorAll('input[type="radio"]').forEach((r) => {
+                if (r.value === s.fork) r.checked = true;
+              });
+              row.dataset.forkChoice = s.fork;
+              if (note) {
+                note.hidden = s.fork !== "neither";
+                note.value = s.note || "";
+              }
+            }
+            paintRow(row);
+            return;
+          }
+
+          row.querySelectorAll(".verdict-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const next =
+                row.dataset.verdict === btn.dataset.verdict
+                  ? ""
+                  : btn.dataset.verdict;
+              applyVerdict(row, next);
+              const cur = state.claims[id] || {};
+              state.claims[id] = {
+                verdict: next,
+                note: txt(note),
+                correction: cur.correction || "",
+              };
+              save();
+              refresh();
+            });
+          });
+          row.querySelectorAll(".correction-opt").forEach((opt) => {
+            opt.addEventListener("click", () => {
+              const cur = state.claims[id] || {};
+              const nextVal =
+                cur.correction === opt.dataset.value ? "" : opt.dataset.value;
+              row.querySelectorAll(".correction-opt").forEach((o) =>
+                o.classList.toggle("selected", o.dataset.value === nextVal),
+              );
+              state.claims[id] = {
+                verdict: row.dataset.verdict || "",
+                note: txt(note),
+                correction: nextVal,
+              };
+              save();
+            });
+          });
+          if (note)
+            note.addEventListener("input", () => {
+              const cur = state.claims[id] || {};
+              state.claims[id] = {
+                verdict: row.dataset.verdict || "",
+                note: note.value,
+                correction: cur.correction || "",
+              };
+              save();
+            });
+
+          const s = state.claims[id];
+          if (s) {
+            if (note) note.value = s.note || "";
+            if (s.correction)
+              row.querySelectorAll(".correction-opt").forEach((o) =>
+                o.classList.toggle("selected", o.dataset.value === s.correction),
+              );
+            applyVerdict(row, s.verdict || "");
+          }
+        }
+
+        // ---------- Added claims (human authors what the AI missed) ----------
+        function renderAdded(item) {
+          const tr = document.createElement("tr");
+          tr.className = "added-row";
+          tr.dataset.addedId = item.id;
+          tr.innerHTML =
+            `<td>${item.id}</td><td>you</td>` +
+            `<td class="u-statement"><textarea class="added-text" name="added-${item.id}" placeholder="The thing I missed…"></textarea></td>` +
+            `<td><span class="badge src-user">you said</span></td>` +
+            `<td><span class="badge conf-high">high</span></td>` +
+            `<td><button type="button" class="remove-added">✕ remove</button></td>`;
+          uTableBody.appendChild(tr);
+          const ta = tr.querySelector(".added-text");
+          ta.value = item.text || "";
+          ta.addEventListener("input", () => {
+            item.text = ta.value;
+            save();
+          });
+          tr.querySelector(".remove-added").addEventListener("click", () => {
+            state.added = state.added.filter((x) => x.id !== item.id);
+            tr.remove();
+            save();
+            refresh();
+          });
+        }
+        const addBtn = document.getElementById("add-claim-btn");
+        if (addBtn) {
+          state.added.forEach(renderAdded);
+          addBtn.addEventListener("click", () => {
+            let n = state.added.length + 1;
+            let id = "A" + n;
+            while (state.added.some((x) => x.id === id)) id = "A" + ++n;
+            const item = { id: id, text: "" };
+            state.added.push(item);
+            renderAdded(item);
+            save();
+          });
+        }
+
+        // ---------- Tensions ----------
+        const tensionCards = Array.from(
+          document.querySelectorAll(".tension-card[data-id]"),
+        );
+        tensionCards.forEach((card) => {
+          const id = card.dataset.id;
+          const note = card.querySelector(".t-note");
+          card.querySelectorAll('input[type="radio"]').forEach((radio) => {
+            radio.addEventListener("change", () => {
+              card.dataset.choice = radio.value;
+              if (note) note.hidden = radio.value !== "other";
+              state.tensions[id] = { choice: radio.value, note: txt(note) };
+              save();
+              refresh();
+            });
+          });
+          if (note)
+            note.addEventListener("input", () => {
+              state.tensions[id] = {
+                choice: card.dataset.choice || "",
+                note: note.value,
+              };
+              save();
+            });
+          const s = state.tensions[id];
+          if (s && s.choice) {
+            card.querySelectorAll('input[type="radio"]').forEach((r) => {
+              if (r.value === s.choice) r.checked = true;
+            });
+            card.dataset.choice = s.choice;
+            if (note) {
+              note.hidden = s.choice !== "other";
+              note.value = s.note || "";
+            }
+          }
+        });
+
+        // ---------- Acceptance examples ----------
+        const exCards = Array.from(
+          document.querySelectorAll(".example-card[data-id]"),
+        );
+        exCards.forEach((card) => {
+          const id = card.dataset.id;
+          const note = card.querySelector(".ex-note");
+          card.querySelectorAll(".verdict-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const next =
+                card.dataset.verdict === btn.dataset.verdict
+                  ? ""
+                  : btn.dataset.verdict;
+              if (next) card.dataset.verdict = next;
+              else card.removeAttribute("data-verdict");
+              card.querySelectorAll(".verdict-btn").forEach((b) =>
+                b.classList.toggle("selected", b.dataset.verdict === next),
+              );
+              if (note) note.hidden = next !== "no";
+              state.examples[id] = { verdict: next, note: txt(note) };
+              save();
+              refresh();
+            });
+          });
+          if (note)
+            note.addEventListener("input", () => {
+              state.examples[id] = {
+                verdict: card.dataset.verdict || "",
+                note: note.value,
+              };
+              save();
+            });
+          const s = state.examples[id];
+          if (s) {
+            if (s.verdict) card.dataset.verdict = s.verdict;
+            card.querySelectorAll(".verdict-btn").forEach((b) =>
+              b.classList.toggle("selected", b.dataset.verdict === s.verdict),
+            );
+            if (note) {
+              note.hidden = s.verdict !== "no";
+              note.value = s.note || "";
+            }
+          }
+        });
+
+        // ---------- Open questions ----------
+        const oqRows = Array.from(
+          document.querySelectorAll("#oq-table tbody tr[data-id]"),
+        );
+        oqRows.forEach((row) => {
+          const id = row.dataset.id;
+          const ta = row.querySelector("textarea");
+          if (!ta) return;
+          if (state.answers[id]) ta.value = state.answers[id];
+          ta.addEventListener("input", () => {
+            state.answers[id] = ta.value;
+            save();
+          });
+        });
+
+        // ---------- Live sync tally + approval gate ----------
+        function refresh() {
+          let agreed = 0;
+          let flagged = 0;
+          let pending = 0;
+          let highPending = 0;
+
+          claimRows().forEach((row) => {
+            paintRow(row);
+            const s = rowState(row);
+            if (s === "agreed") agreed++;
+            else if (s === "flagged") flagged++;
+            else {
+              pending++;
+              if (row.dataset.priority === "high") highPending++;
+            }
+          });
+          tensionCards.forEach((card) => {
+            if (card.dataset.choice) agreed++;
+            else {
+              pending++;
+              highPending++;
+            }
+          });
+          exCards.forEach((card) => {
+            const v = card.dataset.verdict;
+            if (v === "yes") agreed++;
+            else if (v === "no") flagged++;
+            else pending++;
+          });
+
+          const total = agreed + flagged + pending;
+          setText("#sync-confirmed", agreed);
+          setText("#sync-flagged", flagged);
+          setText("#sync-pending", pending);
+          document.getElementById("sync-bar-fill").style.width = total
+            ? (agreed / total) * 100 + "%"
+            : "0%";
+
+          const gate = document.getElementById("sync-gate");
+          if (highPending > 0) {
+            gate.textContent =
+              "⚠ " +
+              highPending +
+              " high-stakes item" +
+              (highPending > 1 ? "s" : "") +
+              " need a decision";
+            gate.className = "sync-gate warn";
+          } else if (pending > 0) {
+            gate.textContent =
+              pending + " item" + (pending > 1 ? "s" : "") + " left to review";
+            gate.className = "sync-gate";
+          } else if (flagged > 0) {
+            gate.textContent =
+              "✓ all reviewed · " + flagged + " to revise next pass";
+            gate.className = "sync-gate";
+          } else {
+            gate.textContent = "✓ fully synced — ready to approve";
+            gate.className = "sync-gate ok";
+          }
+        }
+
+        claimRows().forEach(wireClaim);
+        refresh();
+
+        // ---------- Review export (the manifest carried to the next pass) ----------
+        function labelFor(input) {
+          const label = input && input.closest("label");
+          const span = label && label.querySelector("span");
+          return span ? span.textContent.trim() : "";
+        }
+        function checkedLabel(container, name) {
+          const input = container.querySelector(
+            'input[name="' + name + '"]:checked',
+          );
+          return input ? labelFor(input) : "";
+        }
+
+        function buildReview() {
+          const confirmed = [];
+          const forks = [];
+          const corrections = [];
+          const unreviewed = [];
+
+          claimRows().forEach((row) => {
+            const id = row.dataset.id;
+            const stmt = row.dataset.statement || "";
+            if (row.dataset.fork === "true") {
+              const c = row.dataset.forkChoice;
+              if (!c) {
+                unreviewed.push(id);
+              } else if (c === "neither") {
+                const note = txt(row.querySelector(".u-note"));
+                corrections.push(
+                  `${id} [FORK: none fit] "${stmt}"\n  Right reading: ${note || "(no note)"}`,
+                );
+              } else {
+                forks.push(`${id} → "${checkedLabel(row, "fork-" + id)}"`);
+                confirmed.push(id);
+              }
+              return;
+            }
+            const v = row.dataset.verdict;
+            const cur = state.claims[id] || {};
+            if (v === "yes") {
+              confirmed.push(id);
+            } else if (v === "no" || v === "partly") {
+              const tag = v === "no" ? "WRONG" : "PARTLY";
+              const fix = cur.correction
+                ? `right answer: "${cur.correction}"  (structured)`
+                : `note: ${txt(row.querySelector(".u-note")) || "(no note)"}  (prose)`;
+              corrections.push(`${id} [${tag}] "${stmt}"\n  ${fix}`);
+            } else {
+              unreviewed.push(id);
+            }
+          });
+
+          const added = state.added
+            .filter((a) => (a.text || "").trim())
+            .map((a) => `+${a.id}: ${a.text.trim()}`);
+
+          const tensions = tensionCards.map((card) => {
+            const id = card.dataset.id;
+            const c = card.dataset.choice;
+            if (!c) return `${id}: UNRESOLVED`;
+            if (c === "other")
+              return `${id} → other: ${txt(card.querySelector(".t-note")) || "(no note)"}`;
+            return `${id} → ${checkedLabel(card, "tension-" + id)}`;
+          });
+
+          const exApproved = [];
+          const exRejected = [];
+          const exUnreviewed = [];
+          exCards.forEach((card) => {
+            const id = card.dataset.id;
+            const v = card.dataset.verdict;
+            if (v === "yes") exApproved.push(id);
+            else if (v === "no")
+              exRejected.push(
+                `${id}: ${card.dataset.example}\n  should be: ${txt(card.querySelector(".ex-note")) || "(no note)"}`,
+              );
+            else exUnreviewed.push(id);
+          });
+
+          const answers = oqRows.map((row) => {
+            const q = row.children[1] ? row.children[1].textContent.trim() : "";
+            const a = txt(row.querySelector("textarea"));
+            return `${row.dataset.id}: ${q}\n→ ${a || "(no answer)"}`;
+          });
+
+          return [
+            `ARCH REVIEW — ${docName} ${docVersion} [${docStatus.toUpperCase()}]`,
+            "",
+            "YOUR SUCCESS STATEMENT (your words):",
+            state.recall.trim() || "(not provided)",
+            "(reconcile this against the AI Overview at the top of the doc)",
+            "",
+            `CONFIRMED CLAIMS: ${confirmed.join(", ") || "none"}`,
+            "",
+            forks.length ? "FORK CHOICES:\n" + forks.join("\n") : "FORK CHOICES: none",
+            "",
+            "CORRECTIONS (apply these):",
+            corrections.length ? corrections.join("\n") : "none",
+            "",
+            added.length
+              ? "NEW CLAIMS YOU ADDED:\n" + added.join("\n")
+              : "NEW CLAIMS YOU ADDED: none",
+            "",
+            "TENSIONS:",
+            tensions.length ? tensions.join("\n") : "none",
+            "",
+            "ACCEPTANCE EXAMPLES:",
+            `  APPROVED (binding): ${exApproved.join(", ") || "none"}`,
+            exRejected.length
+              ? "  REJECTED:\n    " + exRejected.join("\n    ")
+              : "  REJECTED: none",
+            `  UNREVIEWED: ${exUnreviewed.join(", ") || "none"}`,
+            "",
+            "OPEN QUESTION ANSWERS:",
+            answers.length ? answers.join("\n") : "none",
+            "",
+            `UNREVIEWED CLAIMS: ${unreviewed.join(", ") || "none"}`,
+            "",
+            "NEXT: reconcile my overview with your success statement; apply the corrections, fork choices, new claims, tension resolutions, and rejected-example fixes to the arch JSON; bump the version and add a revision-log row; regenerate with arch-inject.js. On APPROVED, the CONFIRMED claims + APPROVED examples are the acceptance criteria the implementation must satisfy — carry them into /feature as verification anchors.",
+          ].join("\n");
+        }
+
+        document
+          .getElementById("copy-review-btn")
+          .addEventListener("click", (e) => {
+            const btn = e.currentTarget;
+            navigator.clipboard.writeText(buildReview()).then(() => {
+              const original = btn.textContent;
+              btn.textContent = "✓ Copied";
+              btn.classList.add("copied");
+              setTimeout(() => {
+                btn.textContent = original;
+                btn.classList.remove("copied");
+              }, 1500);
+            });
+          });
+      })();
+    </script>
+  </body>
+</html>

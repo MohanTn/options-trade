@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { analysis, type ChainAnalysis, type ExpiryAnalysis, type VegaFlowPoint } from '../api/client';
+import { analysis, portfolio, type ChainAnalysis, type ExpiryAnalysis, type VegaFlowPoint } from '../api/client';
 import { usePlaySound } from '../hooks/useMonitorSounds';
+import { computeRangeBreach, isNewBreach, openingBands, type RangeBreach } from '../lib/vegaFlowRange';
 import { color, font, pnlColor, type Tone } from '../theme';
 import { Badge, Button, Card, MetricTile, Modal, SectionLabel, TableHeader, TableRow, ViewTitle } from '../ui';
 
@@ -84,6 +85,15 @@ export default function ChainAnalysisView({ sessionValid }: { sessionValid: bool
     retry: false,
   });
 
+  // Portfolio Greeks for unrealized P&L display.
+  const { data: portfolioGreeks } = useQuery({
+    queryKey: ['portfolio', 'greeks'],
+    queryFn: () => portfolio.greeks().then(r => r.data),
+    refetchInterval: 60000,
+    enabled: sessionValid,
+    retry: false,
+  });
+
   if (!sessionValid) {
     return <div style={{ color: color.warn, fontSize: '.82rem' }}>⚠ Connect the Kite session to analyse the option chain.</div>;
   }
@@ -133,7 +143,7 @@ export default function ChainAnalysisView({ sessionValid }: { sessionValid: bool
         <MetricTile surface="card" label="IV Term Spread" value={`${data.termSpreadPct >= 0 ? '+' : ''}${data.termSpreadPct.toFixed(1)}pp`} sub="weekly − monthly ATM IV" valueColor={data.termSpreadPct > 0 ? color.warn : color.textSub} />
       </div>
 
-      <VegaFlowSection points={flowSeries ?? []} vegaRead={vegaRead} />
+      <VegaFlowSection points={flowSeries ?? []} vegaRead={vegaRead} unrealisedPnl={portfolioGreeks?.unrealisedPnl} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
         <ExpiryPanel title="Near Week" exp={data.nearWeek} spot={data.spot} />
@@ -155,83 +165,67 @@ export default function ChainAnalysisView({ sessionValid }: { sessionValid: bool
   );
 }
 
-// ─── Intraday vega-flow line chart (inline SVG, no chart lib) ────────────────
+// ─── Intraday vega-flow chart: three stacked lanes (inline SVG, no chart lib) ─
+// CE ν on top, NIFTY spot in the middle, PE ν at the bottom — each lane has its
+// own auto-fit y-scale with a gap between lanes, so the three series never overlap
+// and relative movement is read by comparing lane shapes, not a shared axis.
 // Series colors are categorical identity (CE = accent blue, PE = amber), validated
 // CVD-safe against the white surface; green/red stay reserved for P&L semantics.
 
-const CHART = { w: 720, h: 180, padL: 44, padR: 64, padT: 12, padB: 24 } as const;
+const CHART = { w: 720, padL: 48, padR: 62, padT: 14, padB: 20, laneH: 65, laneGap: 22 } as const;
+const CHART_H = CHART.padT + CHART.laneH * 3 + CHART.laneGap * 2 + CHART.padB;
 const CE_COLOR = color.accent;
 const PE_COLOR = color.warn;
 const SPOT_COLOR = color.info;
-const THRESHOLD_STORAGE_KEY = 'td_vegaFlowAlertThresholds';
-const DEFAULT_THRESHOLDS = { upper: 25, lower: -25 };
-const MIN_THRESHOLD_GAP = 1; // pp — keeps the two draggable lines from crossing
-const OPENING_RANGE_MS = 2 * 60 * 60 * 1000; // opening-range band = first 2h of the session
 
-// Independent manual y-zoom per axis — x (time) stays fixed to the data's own span; only the
-// vertical scale is operator-adjustable, since the two axes' natural units (vega %, index points)
-// don't auto-compare and the operator wants to eyeball their relative movement.
-const ZOOM_STORAGE_KEY = 'td_vegaFlowZoom';
-const DEFAULT_ZOOM = { vega: 1, spot: 1 };
-// Spot's own index-point range is far narrower than vega%'s, so it needs to zoom out further
-// to flatten a noisy line — hence a lower per-axis floor than the vega axis.
-const ZOOM_MIN: Record<'vega' | 'spot', number> = { vega: 0.4, spot: 0.1 };
-const ZOOM_MAX = 4;
-const ZOOM_STEP = 0.2;
+// Opening-range window: each side's band is the high/low its vega-change touched in
+// the first N hours of the session; a later close outside its own band is the breakout
+// signal that plays the sound alert (see src/lib/vegaFlowRange.ts).
+const ORB_STORAGE_KEY = 'td_vegaFlowRangeHours';
+const ORB_HOURS_OPTIONS = [2, 3] as const;
+const DEFAULT_ORB_HOURS: number = ORB_HOURS_OPTIONS[0];
 
-const clampZoom = (axis: 'vega' | 'spot', n: number) => Math.max(ZOOM_MIN[axis], Math.min(ZOOM_MAX, n));
-
-function loadZoom(): { vega: number; spot: number } {
-  try {
-    const raw = localStorage.getItem(ZOOM_STORAGE_KEY);
-    if (!raw) return DEFAULT_ZOOM;
-    const parsed = JSON.parse(raw);
-    // Clamped even on restore, not just on interactive adjust — a hand-edited or corrupted
-    // localStorage value near 0 would collapse the y-domain to a point and divide-by-zero in y()/ySpot().
-    if (typeof parsed.vega === 'number' && typeof parsed.spot === 'number')
-      return { vega: clampZoom('vega', parsed.vega), spot: clampZoom('spot', parsed.spot) };
-  } catch {
-    // corrupt/foreign localStorage value — fall back to defaults
-  }
-  return DEFAULT_ZOOM;
+function loadOrbHours(): number {
+  const raw = Number(localStorage.getItem(ORB_STORAGE_KEY));
+  return (ORB_HOURS_OPTIONS as readonly number[]).includes(raw) ? raw : DEFAULT_ORB_HOURS;
 }
 
 const fmtIST = (utc: string) =>
   new Date(utc).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit' });
 
-function loadThresholds(): { upper: number; lower: number } {
-  try {
-    const raw = localStorage.getItem(THRESHOLD_STORAGE_KEY);
-    if (!raw) return DEFAULT_THRESHOLDS;
-    const parsed = JSON.parse(raw);
-    if (typeof parsed.upper === 'number' && typeof parsed.lower === 'number' && parsed.upper > parsed.lower)
-      return parsed;
-  } catch {
-    // corrupt/foreign localStorage value — fall back to defaults
-  }
-  return DEFAULT_THRESHOLDS;
-}
+const fmtPct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+const fmtSpot = (v: number) => v.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
-type BreachState = { ceUpper: boolean; ceLower: boolean; peUpper: boolean; peLower: boolean };
-const computeBreach = (last: VegaFlowPoint, threshold: { upper: number; lower: number }): BreachState => ({
-  ceUpper: last.weekCe >= threshold.upper, ceLower: last.weekCe <= threshold.lower,
-  peUpper: last.weekPe >= threshold.upper, peLower: last.weekPe <= threshold.lower,
-});
+// One lane's linear y-scale, auto-fit to its own values with breathing room. `minPad`
+// keeps a flat series from collapsing the domain to a point (divide-by-zero in y()).
+function laneScale(values: number[], top: number, laneH: number, minPad: number) {
+  const lo = Math.min(...values), hi = Math.max(...values);
+  const pad = Math.max((hi - lo) * 0.15, minPad);
+  const min = lo - pad, max = hi + pad;
+  return { lo, hi, min, max, y: (v: number) => top + ((max - v) / (max - min)) * laneH };
+}
 
 // Card in its normal in-page spot, or the same content blown up in a modal that fills the
 // browser window (not the OS-level Fullscreen API — the user wants the chart to take up the
 // available page area, not take over the whole screen). VegaFlowChart's own SVG already scales
 // via viewBox (no fixed pixel height), so simply giving it a much wider container is enough —
 // no chart-geometry changes needed.
-function VegaFlowSection({ points, vegaRead }: { points: VegaFlowPoint[]; vegaRead: { note: string } }) {
+function VegaFlowSection({ points, vegaRead, unrealisedPnl }: { points: VegaFlowPoint[]; vegaRead: { note: string }; unrealisedPnl?: number }) {
   const [maximized, setMaximized] = useState(false);
   const toggle = () => setMaximized(m => !m);
+
+  const pnlValue = unrealisedPnl !== undefined ? (
+    <span style={{ fontWeight: 700, fontSize: '.95rem', fontFamily: font.mono, color: pnlColor(unrealisedPnl), whiteSpace: 'nowrap' }}>
+      {unrealisedPnl < 0 ? '−' : ''}₹{Math.abs(unrealisedPnl).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+    </span>
+  ) : null;
 
   const body = (
     <>
       {!maximized && <SectionLabel>Vega flow — Δ Σν vs morning, near week (leading indicator)</SectionLabel>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
         <span style={{ fontSize: '.76rem', color: color.textSub }}>{vegaRead.note}</span>
+        {pnlValue && <div style={{ fontSize: '.76rem', color: color.textSub }}>· Unrealized P&L: {pnlValue}</div>}
         <Button
           size="sm" variant="ghost" style={{ marginLeft: 'auto' }} onClick={toggle}
           aria-label={maximized ? 'Restore chart to normal size' : 'Maximize chart to fill the window'}
@@ -243,10 +237,19 @@ function VegaFlowSection({ points, vegaRead }: { points: VegaFlowPoint[]; vegaRe
     </>
   );
 
+  const subtitle = unrealisedPnl !== undefined
+    ? (
+      <div style={{ display: 'flex', gap: 4, alignItems: 'baseline', flexWrap: 'wrap' }}>
+        <span>Δ Σν vs morning, near week · Unrealized P&L:</span>
+        {pnlValue}
+      </div>
+    )
+    : 'Δ Σν vs morning, near week (leading indicator)';
+
   if (!maximized) return <Card>{body}</Card>;
   return (
     <Modal
-      title="Vega Flow Chart" subtitle="Δ Σν vs morning, near week (leading indicator)"
+      title="Vega Flow Chart" subtitle={subtitle}
       onClose={toggle} closeOnBackdrop
       // Larger than any real viewport — Modal's own maxWidth: 100% is what actually caps it,
       // so this just needs to always lose to that cap, on any screen size.
@@ -260,31 +263,31 @@ function VegaFlowSection({ points, vegaRead }: { points: VegaFlowPoint[]; vegaRe
 function VegaFlowChart({ points }: { points: VegaFlowPoint[] }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-  const [threshold, setThreshold] = useState(loadThresholds);
-  const [zoom, setZoom] = useState(loadZoom);
-  const dragRef = useRef<'upper' | 'lower' | null>(null);
+  const [orbHours, setOrbHoursState] = useState(loadOrbHours);
   const play = usePlaySound();
   // Edge-trigger memory only — NOT used for rendering (see `breach` below), so the alert fires
   // once per new crossing rather than every poll while a breach persists.
-  const prevBreachRef = useRef<BreachState | null>(null);
+  const prevBreachRef = useRef<RangeBreach | null>(null);
 
-  // Checked only when new data arrives (not on every drag frame) so dragging the line to a value
-  // the series already passed doesn't itself fire an alert — only a genuine new crossing does.
-  // `threshold` is intentionally omitted from the deps: this closure still reads its current
-  // value (captured fresh each render), so a drag alone can't re-trigger the effect.
+  const windowMs = orbHours * 3_600_000;
+  const setOrbHours = (hrs: number) => {
+    // Re-basing the band can flip an in-range value to out-of-range; clearing the edge-trigger
+    // memory makes the next effect run a seed, so the toggle itself never plays the alert.
+    prevBreachRef.current = null;
+    setOrbHoursState(hrs);
+    localStorage.setItem(ORB_STORAGE_KEY, String(hrs));
+  };
+
   useEffect(() => {
-    if (points.length === 0) return;
-    const next = computeBreach(points[points.length - 1], threshold);
+    const bands = openingBands(points, windowMs);
+    if (!bands) return;
+    const next = computeRangeBreach(points[points.length - 1], bands);
     const prev = prevBreachRef.current;
-    if (prev != null &&
-        ((next.ceUpper && !prev.ceUpper) || (next.ceLower && !prev.ceLower) ||
-         (next.peUpper && !prev.peUpper) || (next.peLower && !prev.peLower))) {
-      play('criticalAlert');
-    }
-    // First sample after mount just seeds `prev` — an already-breached chart shouldn't alarm on load.
+    if (prev != null && isNewBreach(prev, next)) play('criticalAlert');
+    // First sample after mount (or after a window toggle) just seeds `prev` — an
+    // already-breached chart shouldn't alarm on load.
     prevBreachRef.current = next;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [points, play]);
+  }, [points, windowMs, play]);
 
   if (points.length < 2) {
     return (
@@ -294,71 +297,33 @@ function VegaFlowChart({ points }: { points: VegaFlowPoint[] }) {
     );
   }
 
-  const { w, h, padL, padR, padT, padB } = CHART;
+  const { w, padL, padR, padT, padB, laneH, laneGap } = CHART;
+  const h = CHART_H;
+  const plotW = w - padL - padR;
   const t0 = new Date(points[0].atUtc).getTime();
   const t1 = new Date(points[points.length - 1].atUtc).getTime();
   const span = Math.max(t1 - t0, 1);
-  const x = (p: VegaFlowPoint) => padL + ((new Date(p.atUtc).getTime() - t0) / span) * (w - padL - padR);
+  const x = (p: VegaFlowPoint) => padL + ((new Date(p.atUtc).getTime() - t0) / span) * plotW;
 
-  // Opening-range band: the high/low each side's vega-change touched in the first 2h of the
-  // session, drawn as a static shaded zone for the rest of the day — range-bound while the line
-  // stays inside its own band; a break above/below either one is the "a move is coming" signal.
-  const openingCutoff = t0 + OPENING_RANGE_MS;
-  const openingPoints = points.filter(p => new Date(p.atUtc).getTime() <= openingCutoff);
-  const ceBand = { min: Math.min(...openingPoints.map(p => p.weekCe)), max: Math.max(...openingPoints.map(p => p.weekCe)) };
-  const peBand = { min: Math.min(...openingPoints.map(p => p.weekPe)), max: Math.max(...openingPoints.map(p => p.weekPe)) };
+  const laneTop = { ce: padT, spot: padT + laneH + laneGap, pe: padT + 2 * (laneH + laneGap) };
 
-  // Threshold values are folded into the domain so a dragged line is always visible, even past
-  // the data's own range — the chart auto-scales to keep both the series and the alert band in view.
-  // (The opening-range bands need no entry here: they're always the min/max of a *subset* of
-  // `points`, so they can never fall outside the full series' own range already included below.)
-  const values = [...points.flatMap(p => [p.weekCe, p.weekPe]), threshold.upper, threshold.lower];
-  let yMin = Math.min(0, ...values), yMax = Math.max(0, ...values);
-  const pad = Math.max((yMax - yMin) * 0.12, 0.5);
-  yMin -= pad; yMax += pad;
-  // Manual zoom scales the auto-fit span around its own center — zoom > 1 magnifies (data swings
-  // more across the fixed chart height), zoom < 1 flattens.
-  {
-    const vegaCenter = (yMax + yMin) / 2;
-    const vegaHalfSpan = (yMax - yMin) / 2 / zoom.vega;
-    yMin = vegaCenter - vegaHalfSpan;
-    yMax = vegaCenter + vegaHalfSpan;
-  }
-  const y = (v: number) => padT + ((yMax - v) / (yMax - yMin)) * (h - padT - padB);
-  const yInv = (py: number) => yMax - ((py - padT) / (h - padT - padB)) * (yMax - yMin);
-
-  // NIFTY spot on its own right-hand axis (independent scale from the vega-change lines, and
-  // independently zoomable — see `zoom.spot` below). Spot is only captured going forward — older
-  // cached points from before this field existed read as 0 — so those are dropped from the
-  // line/scale rather than plotting a false drop to zero.
+  const ceScale = laneScale(points.map(p => p.weekCe), laneTop.ce, laneH, 0.5);
+  const peScale = laneScale(points.map(p => p.weekPe), laneTop.pe, laneH, 0.5);
+  // Spot is only captured going forward — older cached points from before this field existed
+  // read as 0 — so those are dropped from the line/scale rather than plotting a false drop to zero.
   const spotValues = points.map(p => p.spot).filter(s => s > 0);
-  const sMin0 = spotValues.length > 0 ? Math.min(...spotValues) : 0;
-  const sMax0 = spotValues.length > 0 ? Math.max(...spotValues) : 1;
-  const sPad = Math.max((sMax0 - sMin0) * 0.12, 1);
-  let sMin = sMin0 - sPad, sMax = sMax0 + sPad;
-  {
-    const spotCenter = (sMax + sMin) / 2;
-    const spotHalfSpan = (sMax - sMin) / 2 / zoom.spot;
-    sMin = spotCenter - spotHalfSpan;
-    sMax = spotCenter + spotHalfSpan;
-  }
-  const ySpot = (v: number) => padT + ((sMax - v) / (sMax - sMin)) * (h - padT - padB);
-  const spotLine = points.filter(p => p.spot > 0).map(p => `${x(p).toFixed(1)},${ySpot(p.spot).toFixed(1)}`).join(' ');
+  const spotScale = spotValues.length > 0 ? laneScale(spotValues, laneTop.spot, laneH, 1) : null;
 
-  const line = (get: (p: VegaFlowPoint) => number) => points.map(p => `${x(p).toFixed(1)},${y(get(p)).toFixed(1)}`).join(' ');
+  const lanePoints = (get: (p: VegaFlowPoint) => number, y: (v: number) => number, keep: (p: VegaFlowPoint) => boolean = () => true) =>
+    points.filter(keep).map(p => `${x(p).toFixed(1)},${y(get(p)).toFixed(1)}`).join(' ');
 
   const last = points[points.length - 1];
-  // Direct end labels; nudge apart when the lines end close together.
-  let ceLabelY = y(last.weekCe), peLabelY = y(last.weekPe);
-  if (Math.abs(ceLabelY - peLabelY) < 12) {
-    const ceOnTop = ceLabelY <= peLabelY;
-    const mid = (ceLabelY + peLabelY) / 2;
-    ceLabelY = mid + (ceOnTop ? -6 : 6);
-    peLabelY = mid + (ceOnTop ? 6 : -6);
-  }
+  const bands = openingBands(points, windowMs)!; // points.length >= 2 here, never null
+  // Computed live from the current render's data — never lags behind a poll cycle the way
+  // reading the edge-trigger ref during render would (that ref only updates post-render).
+  const breach = computeRangeBreach(last, bands);
 
   const onMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (dragRef.current) return; // dragging owns the pointer via capture; skip hover recompute
     const rect = svgRef.current?.getBoundingClientRect();
     if (!rect) return;
     const vx = ((e.clientX - rect.left) / rect.width) * w;
@@ -367,162 +332,105 @@ function VegaFlowChart({ points }: { points: VegaFlowPoint[] }) {
     setHoverIdx(best);
   };
 
-  const pixelToViewBoxY = (clientY: number) => {
-    const rect = svgRef.current?.getBoundingClientRect();
-    return rect ? ((clientY - rect.top) / rect.height) * h : padT;
-  };
-
-  const startDrag = (which: 'upper' | 'lower') => (e: React.PointerEvent<SVGLineElement>) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = which;
-  };
-  const onDragMove = (e: React.PointerEvent<SVGLineElement>) => {
-    if (!dragRef.current) return;
-    const raw = Math.round(yInv(pixelToViewBoxY(e.clientY)) * 10) / 10;
-    const clamped = Math.max(-100, Math.min(100, raw));
-    setThreshold(prev =>
-      dragRef.current === 'upper'
-        ? { ...prev, upper: Math.max(clamped, prev.lower + MIN_THRESHOLD_GAP) }
-        : { ...prev, lower: Math.min(clamped, prev.upper - MIN_THRESHOLD_GAP) });
-  };
-  const endDrag = (e: React.PointerEvent<SVGLineElement>) => {
-    if (!dragRef.current) return;
-    e.currentTarget.releasePointerCapture(e.pointerId);
-    dragRef.current = null;
-    localStorage.setItem(THRESHOLD_STORAGE_KEY, JSON.stringify(threshold));
-  };
-  // Keyboard alternative to dragging: Arrow = 0.5pp, Shift+Arrow = 5pp. Reads the closed-over
-  // `threshold` directly (safe for a discrete keypress, unlike a rapid pointer drag) so the
-  // localStorage write stays a plain statement instead of a side effect inside the setState
-  // updater, which React may invoke twice under StrictMode.
-  const onHandleKeyDown = (which: 'upper' | 'lower') => (e: React.KeyboardEvent<SVGCircleElement>) => {
-    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-    e.preventDefault();
-    const step = (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 5 : 0.5);
-    const next = which === 'upper'
-      ? { ...threshold, upper: Math.max(-100, Math.min(100, Math.round((threshold.upper + step) * 10) / 10)) }
-      : { ...threshold, lower: Math.max(-100, Math.min(100, Math.round((threshold.lower + step) * 10) / 10)) };
-    next.upper = Math.max(next.upper, next.lower + MIN_THRESHOLD_GAP);
-    next.lower = Math.min(next.lower, next.upper - MIN_THRESHOLD_GAP);
-    setThreshold(next);
-    localStorage.setItem(THRESHOLD_STORAGE_KEY, JSON.stringify(next));
-  };
-
-  const adjustZoom = (axis: 'vega' | 'spot', delta: number) => {
-    setZoom(prev => {
-      const next = { ...prev, [axis]: Math.round(clampZoom(axis, prev[axis] + delta) * 100) / 100 };
-      localStorage.setItem(ZOOM_STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
-  };
-  const resetZoom = (axis: 'vega' | 'spot') => {
-    setZoom(prev => {
-      const next = { ...prev, [axis]: DEFAULT_ZOOM[axis] };
-      localStorage.setItem(ZOOM_STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
-  };
-
   const hover = hoverIdx != null ? points[hoverIdx] : null;
-  // Inset from the plot edges by a fraction of the *current* (post-zoom) span, not the stale
-  // pre-zoom `pad` — otherwise zooming in/out would push these labels off past the domain edges.
-  const tickInset = (yMax - yMin) * 0.06;
-  const ticks = [...new Set([yMax - tickInset, 0, yMin + tickInset].map(v => Math.round(v * 10) / 10))];
   const midT = points[Math.floor(points.length / 2)];
   // Skip the middle time label while the series is too short for it to clear the edge labels.
   const timeLabels = points.length >= 6 ? [points[0], midT, last] : [points[0], last];
 
-  // Computed live from the current render's data + threshold — never lags behind a poll cycle
-  // the way reading the edge-trigger ref during render would (that ref only updates post-render).
-  const breach = computeBreach(last, threshold);
-  const anyBreached = breach.ceUpper || breach.ceLower || breach.peUpper || breach.peLower;
-
-  const thresholdLine = (which: 'upper' | 'lower', value: number, breached: boolean) => (
-    <g key={which}>
-      <line
-        x1={padL} x2={w - padR} y1={y(value)} y2={y(value)}
-        stroke={breached ? color.neg : color.textFaint} strokeWidth={1.5} strokeDasharray="5 3"
+  // One lane: title above, faint inset panel behind, own hi/lo axis labels on the left,
+  // the series line, and its latest value direct-labeled at the line's end on the right.
+  const lane = (opts: {
+    key: string; title: string; top: number; scale: ReturnType<typeof laneScale>;
+    stroke: string; dashed?: boolean; linePts: string; lastValue: string; lastY: number;
+    fmt: (v: number) => string; breached?: boolean; band?: { min: number; max: number; fill: string; edge: string };
+  }) => (
+    <g key={opts.key}>
+      <text x={padL} y={opts.top - 5} fontSize={9} fontWeight={600} fill={color.textSub} fontFamily={font.sans}>{opts.title}</text>
+      <rect x={padL} y={opts.top} width={plotW} height={laneH} fill={color.subtle} />
+      <line x1={padL} x2={w - padR} y1={opts.top} y2={opts.top} stroke={color.border} strokeWidth={1} />
+      <line x1={padL} x2={w - padR} y1={opts.top + laneH} y2={opts.top + laneH} stroke={color.border} strokeWidth={1} />
+      {/* Opening-range band, painted behind the line. Uses a *Border token (200-step), not *Bg —
+          the Bg tokens are near-white and stay washed out no matter the fill-opacity. */}
+      {opts.band && opts.band.max > opts.band.min && (
+        <>
+          <rect
+            x={padL} y={opts.scale.y(opts.band.max)} width={plotW}
+            height={Math.max(opts.scale.y(opts.band.min) - opts.scale.y(opts.band.max), 0.5)}
+            fill={opts.band.fill} fillOpacity={0.5}
+          />
+          {([opts.band.max, opts.band.min] as const).map(edge => (
+            <line
+              key={edge} x1={padL} x2={w - padR} y1={opts.scale.y(edge)} y2={opts.scale.y(edge)}
+              stroke={opts.band!.edge} strokeOpacity={0.6} strokeWidth={1} strokeDasharray="4 3"
+            />
+          ))}
+        </>
+      )}
+      {/* Zero baseline for the Δ-vs-morning lanes, when zero is in view. */}
+      {opts.scale.min < 0 && opts.scale.max > 0 && (
+        <line x1={padL} x2={w - padR} y1={opts.scale.y(0)} y2={opts.scale.y(0)} stroke={color.borderStrong} strokeWidth={1} />
+      )}
+      {/* Per-lane hi/lo axis labels at the data's own extremes. */}
+      {[...new Set([opts.scale.hi, opts.scale.lo])].map(v => (
+        <text key={v} x={padL - 6} y={opts.scale.y(v) + 2} textAnchor="end" fontSize={9} fill={color.textMuted} fontFamily={font.mono}>
+          {opts.fmt(v)}
+        </text>
+      ))}
+      <polyline
+        points={opts.linePts} fill="none" stroke={opts.stroke} strokeWidth={2}
+        strokeLinejoin="round" strokeDasharray={opts.dashed ? '4 2' : undefined}
       />
-      {/* Wide transparent hit-area for an easy grab, per the ≥8px touch-target rule. */}
-      <line
-        x1={padL} x2={w - padR} y1={y(value)} y2={y(value)}
-        stroke="transparent" strokeWidth={16} style={{ cursor: 'ns-resize' }}
-        onPointerDown={startDrag(which)} onPointerMove={onDragMove} onPointerUp={endDrag} onPointerCancel={endDrag}
-      />
-      <circle
-        cx={padL + 8} cy={y(value)} r={4} fill={color.surface} stroke={breached ? color.neg : color.textSub} strokeWidth={1.5}
-        style={{ cursor: 'ns-resize' }} tabIndex={0} onKeyDown={onHandleKeyDown(which)}
-        role="slider" aria-label={`${which === 'upper' ? 'Upper' : 'Lower'} vega-flow alert threshold`}
-        aria-valuemin={-100} aria-valuemax={100} aria-valuenow={value} aria-valuetext={`${value.toFixed(1)} percentage points`}
-      />
-      <text x={padL + 16} y={y(value) - 4} fontSize={10} fontWeight={700} fill={breached ? color.neg : color.textSub} fontFamily={font.mono}>
-        {value >= 0 ? '+' : ''}{value.toFixed(1)}pp
+      {/* Latest value in text ink at the line's end; red only when it sits outside its band. */}
+      <text
+        x={w - padR + 6} y={opts.lastY + 2} fontSize={9} fontWeight={700}
+        fill={opts.breached ? color.neg : color.textSub} fontFamily={font.mono}
+      >
+        {opts.lastValue}
       </text>
     </g>
   );
 
-  // Compact +/-/reset stepper for one axis's manual y-zoom. x (time) is never adjustable here —
-  // only the vertical scale, per axis, independently of the other.
-  const zoomStepper = (axis: 'vega' | 'spot', label: string, swatches: string[]) => (
-    <div key={axis} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-      <div style={{ display: 'flex', gap: 2, marginBottom: 2 }}>
-        {swatches.map(c => <span key={c} style={{ width: 8, height: 8, borderRadius: 2, background: c }} />)}
-      </div>
-      <span style={{ fontSize: '.6rem', color: color.textMuted, fontWeight: 600 }}>{label}</span>
-      <Button
-        size="sm" variant="secondary" disabled={zoom[axis] >= ZOOM_MAX}
-        onClick={() => adjustZoom(axis, ZOOM_STEP)} aria-label={`Zoom in ${label} axis`}
-        style={{ padding: '0 6px', minWidth: 22, fontSize: '.75rem', lineHeight: 1.6 }}
-      >+</Button>
-      <Button
-        size="sm" variant="ghost" onClick={() => resetZoom(axis)}
-        aria-label={`Reset ${label} axis zoom to 1.0x`} disabled={zoom[axis] === DEFAULT_ZOOM[axis]}
-        style={{ padding: '2px 2px', minWidth: 22, fontSize: '.62rem', fontFamily: font.mono }}
-      >{zoom[axis].toFixed(1)}×</Button>
-      <Button
-        size="sm" variant="secondary" disabled={zoom[axis] <= ZOOM_MIN[axis]}
-        onClick={() => adjustZoom(axis, -ZOOM_STEP)} aria-label={`Zoom out ${label} axis`}
-        style={{ padding: '0 6px', minWidth: 22, fontSize: '.75rem', lineHeight: 1.6 }}
-      >−</Button>
-    </div>
-  );
-
   return (
     <div style={{ position: 'relative' }}>
-      <div style={{ display: 'flex', gap: 10, alignItems: 'stretch' }}>
-      <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-      {/* No role="img": the sliders below are real interactive descendants, which "img" disallows exposing to AT. */}
       <svg
         ref={svgRef} viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', display: 'block' }}
-        aria-label="Intraday change in call-side and put-side vega sums versus the morning baseline, overlaid with NIFTY spot and each side's first-2h opening range, with two draggable alert-threshold sliders"
+        role="img"
+        aria-label={`Three stacked lanes: call-side vega change versus the morning baseline on top, NIFTY spot in the middle, put-side vega change at the bottom, each on its own scale. The call and put lanes shade their first-${orbHours}-hour opening range; a value crossing outside its own range plays a sound alert.`}
         onMouseMove={onMove} onMouseLeave={() => setHoverIdx(null)}
       >
-        {/* Opening-range bands (first 2h high/low), painted first so they sit behind everything else.
-            Uses the *Border tokens (blue-200/red-200), not *Bg (blue-50/red-50) — the Bg tokens are
-            near-white and stay washed out no matter the fill-opacity. */}
-        {ceBand.max > ceBand.min && (
-          <rect x={padL} y={y(ceBand.max)} width={w - padL - padR} height={Math.max(y(ceBand.min) - y(ceBand.max), 0.5)} fill={color.accentBorder} fillOpacity={0.55} />
-        )}
-        {peBand.max > peBand.min && (
-          <rect x={padL} y={y(peBand.max)} width={w - padL - padR} height={Math.max(y(peBand.min) - y(peBand.max), 0.5)} fill={color.negBorder} fillOpacity={0.55} />
-        )}
-        {/* Recessive grid: one line per tick; the zero baseline is slightly stronger. */}
-        {ticks.map(v => (
-          <g key={v}>
-            <line x1={padL} x2={w - padR} y1={y(v)} y2={y(v)} stroke={v === 0 ? color.borderStrong : color.border} strokeWidth={1} />
-            <text x={padL - 6} y={y(v) + 3} textAnchor="end" fontSize={10} fill={color.textMuted} fontFamily={font.mono}>
-              {v > 0 ? `+${v}` : v}%
+        {lane({
+          key: 'ce', title: 'CE ν (call side) — Δ vs morning', top: laneTop.ce, scale: ceScale,
+          stroke: CE_COLOR, linePts: lanePoints(p => p.weekCe, ceScale.y),
+          lastValue: fmtPct(last.weekCe), lastY: ceScale.y(last.weekCe), fmt: fmtPct,
+          breached: breach.ceAbove || breach.ceBelow,
+          band: { ...bands.ce, fill: color.accentBorder, edge: CE_COLOR },
+        })}
+        {spotScale ? (
+          lane({
+            key: 'spot', title: 'NIFTY spot', top: laneTop.spot, scale: spotScale,
+            stroke: SPOT_COLOR, dashed: true, linePts: lanePoints(p => p.spot, spotScale.y, p => p.spot > 0),
+            lastValue: fmtSpot(last.spot), lastY: spotScale.y(last.spot > 0 ? last.spot : spotValues[spotValues.length - 1]), fmt: fmtSpot,
+          })
+        ) : (
+          <g>
+            <text x={padL} y={laneTop.spot - 5} fontSize={9} fontWeight={600} fill={color.textSub} fontFamily={font.sans}>NIFTY spot</text>
+            <rect x={padL} y={laneTop.spot} width={plotW} height={laneH} fill={color.subtle} />
+            <text x={padL + plotW / 2} y={laneTop.spot + laneH / 2 + 2} textAnchor="middle" fontSize={9} fill={color.textMuted}>
+              no spot samples yet
             </text>
           </g>
-        ))}
-        {spotValues.length > 0 && [...new Set([sMax0, (sMax0 + sMin0) / 2, sMin0])].map(v => (
-          <text key={`spot-${v}`} x={w - padR + 6} y={ySpot(v) + 3} fontSize={10} fill={color.textMuted} fontFamily={font.mono}>
-            {v.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-          </text>
-        ))}
+        )}
+        {lane({
+          key: 'pe', title: 'PE ν (put side) — Δ vs morning', top: laneTop.pe, scale: peScale,
+          stroke: PE_COLOR, linePts: lanePoints(p => p.weekPe, peScale.y),
+          lastValue: fmtPct(last.weekPe), lastY: peScale.y(last.weekPe), fmt: fmtPct,
+          breached: breach.peAbove || breach.peBelow,
+          band: { ...bands.pe, fill: color.warnBorder, edge: PE_COLOR },
+        })}
+
         {timeLabels.map((p, i) => (
           <text
-            key={i} y={h - 8} fontSize={10} fill={color.textMuted} fontFamily={font.mono}
+            key={i} y={h - 6} fontSize={9} fill={color.textMuted} fontFamily={font.mono}
             x={i === 0 ? padL : i === timeLabels.length - 1 ? x(last) : x(p)}
             textAnchor={i === 0 ? 'start' : i === timeLabels.length - 1 ? 'end' : 'middle'}
           >
@@ -530,27 +438,15 @@ function VegaFlowChart({ points }: { points: VegaFlowPoint[] }) {
           </text>
         ))}
 
-        <polyline points={line(p => p.weekCe)} fill="none" stroke={CE_COLOR} strokeWidth={2} strokeLinejoin="round" />
-        <polyline points={line(p => p.weekPe)} fill="none" stroke={PE_COLOR} strokeWidth={2} strokeLinejoin="round" />
-        {spotLine && <polyline points={spotLine} fill="none" stroke={SPOT_COLOR} strokeWidth={2} strokeDasharray="4 2" strokeLinejoin="round" />}
-
-        {/* Direct end labels in text ink; the adjacent line end carries the identity color. */}
-        <text x={x(last) + 6} y={ceLabelY + 3} fontSize={10} fill={color.textSub} fontFamily={font.sans}>CE ν</text>
-        <text x={x(last) + 6} y={peLabelY + 3} fontSize={10} fill={color.textSub} fontFamily={font.sans}>PE ν</text>
-
-        {/* Hover crosshair: kept small and painted before the threshold handles below, so a
-            handle near the hovered point is never hidden or blocked by it. */}
+        {/* Hover crosshair spans all three lanes so vertical alignment across them is readable. */}
         {hover && (
           <g>
             <line x1={x(hover)} x2={x(hover)} y1={padT} y2={h - padB} stroke={color.borderStrong} strokeWidth={1} strokeOpacity={0.6} />
-            <circle cx={x(hover)} cy={y(hover.weekCe)} r={2.5} fill={CE_COLOR} stroke={color.surface} strokeWidth={1.5} />
-            <circle cx={x(hover)} cy={y(hover.weekPe)} r={2.5} fill={PE_COLOR} stroke={color.surface} strokeWidth={1.5} />
-            {hover.spot > 0 && <circle cx={x(hover)} cy={ySpot(hover.spot)} r={2.5} fill={SPOT_COLOR} stroke={color.surface} strokeWidth={1.5} />}
+            <circle cx={x(hover)} cy={ceScale.y(hover.weekCe)} r={2.5} fill={CE_COLOR} stroke={color.surface} strokeWidth={1.5} />
+            {spotScale && hover.spot > 0 && <circle cx={x(hover)} cy={spotScale.y(hover.spot)} r={2.5} fill={SPOT_COLOR} stroke={color.surface} strokeWidth={1.5} />}
+            <circle cx={x(hover)} cy={peScale.y(hover.weekPe)} r={2.5} fill={PE_COLOR} stroke={color.surface} strokeWidth={1.5} />
           </g>
         )}
-
-        {thresholdLine('upper', threshold.upper, breach.ceUpper || breach.peUpper)}
-        {thresholdLine('lower', threshold.lower, breach.ceLower || breach.peLower)}
       </svg>
 
       {hover && (
@@ -562,9 +458,9 @@ function VegaFlowChart({ points }: { points: VegaFlowPoint[] }) {
           boxShadow: '0 4px 16px rgba(15,23,42,.12)', padding: '6px 10px', pointerEvents: 'none', whiteSpace: 'nowrap',
         }}>
           <div style={{ fontSize: '.66rem', color: color.textMuted, fontFamily: font.mono }}>{fmtIST(hover.atUtc)} IST</div>
-          {([['CE ν', `${hover.weekCe >= 0 ? '+' : ''}${hover.weekCe.toFixed(1)}%`, CE_COLOR],
-             ['PE ν', `${hover.weekPe >= 0 ? '+' : ''}${hover.weekPe.toFixed(1)}%`, PE_COLOR],
-             ['Spot', hover.spot > 0 ? hover.spot.toLocaleString('en-IN', { maximumFractionDigits: 0 }) : '—', SPOT_COLOR]] as const).map(([k, v, c]) => (
+          {([['CE ν', fmtPct(hover.weekCe), CE_COLOR],
+             ['Spot', hover.spot > 0 ? fmtSpot(hover.spot) : '—', SPOT_COLOR],
+             ['PE ν', fmtPct(hover.weekPe), PE_COLOR]] as const).map(([k, v, c]) => (
             <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.72rem' }}>
               <span style={{ width: 8, height: 8, borderRadius: 2, background: c }} />
               <span style={{ color: color.textSub }}>{k}</span>
@@ -573,49 +469,38 @@ function VegaFlowChart({ points }: { points: VegaFlowPoint[] }) {
           ))}
         </div>
       )}
-      </div>
 
-      {/* Manual y-zoom: left stepper scales the CE/PE vega axis, right stepper scales the NIFTY
-          spot axis — independently of each other, and never affecting the fixed time (x) axis. */}
-      <div style={{ display: 'flex', gap: 10, flexShrink: 0, borderLeft: `1px solid ${color.border}`, paddingLeft: 10 }}>
-        {zoomStepper('vega', 'ν', [CE_COLOR, PE_COLOR])}
-        {zoomStepper('spot', 'Spot', [SPOT_COLOR])}
-      </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 16, marginTop: 6, fontSize: '.72rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        {([['CE ν (call side)', last.weekCe, CE_COLOR], ['PE ν (put side)', last.weekPe, PE_COLOR]] as const).map(([k, v, c]) => (
-          <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, background: c }} />
-            <span style={{ color: color.textSub }}>{k}</span>
-            <span style={{ color: color.text, fontFamily: font.mono }}>{v >= 0 ? '+' : ''}{v.toFixed(1)}%</span>
-          </span>
-        ))}
-        {last.spot > 0 && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 14, height: 0, borderTop: `2px dashed ${SPOT_COLOR}` }} />
-            <span style={{ color: color.textSub }}>NIFTY spot</span>
-            <span style={{ color: color.text, fontFamily: font.mono }}>{last.spot.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-          </span>
-        )}
+      <div style={{ display: 'flex', gap: 14, marginTop: 6, fontSize: '.72rem', alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ width: 10, height: 10, borderRadius: 2, background: color.accentBorder }} />
-          <span style={{ color: color.textSub }}>CE opening range</span>
-          <span style={{ width: 10, height: 10, borderRadius: 2, background: color.negBorder }} />
-          <span style={{ color: color.textSub }}>PE opening range</span>
+          <span style={{ color: color.textSub }}>CE range</span>
+          <span style={{ color: color.text, fontFamily: font.mono }}>{fmtPct(bands.ce.min)} … {fmtPct(bands.ce.max)}</span>
         </span>
-        {anyBreached && <Badge tone="neg">⚠ threshold breached</Badge>}
-        <span style={{ marginLeft: anyBreached ? undefined : 'auto', color: color.textMuted, fontSize: '.66rem' }}>
-          drag the dashed lines to set alert levels (±25pp default) · shaded band = first-2h CE/PE range · side rising = being bought
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 2, background: color.warnBorder }} />
+          <span style={{ color: color.textSub }}>PE range</span>
+          <span style={{ color: color.text, fontFamily: font.mono }}>{fmtPct(bands.pe.min)} … {fmtPct(bands.pe.max)}</span>
         </span>
-        {(threshold.upper !== DEFAULT_THRESHOLDS.upper || threshold.lower !== DEFAULT_THRESHOLDS.lower) && (
-          <Button
-            size="sm" variant="ghost"
-            onClick={() => { setThreshold(DEFAULT_THRESHOLDS); localStorage.setItem(THRESHOLD_STORAGE_KEY, JSON.stringify(DEFAULT_THRESHOLDS)); }}
-          >
-            Reset ±25pp
-          </Button>
-        )}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ color: color.textMuted, fontSize: '.68rem' }}>range window</span>
+          {ORB_HOURS_OPTIONS.map(hrs => (
+            <Button
+              key={hrs} size="sm" variant={orbHours === hrs ? 'secondary' : 'ghost'}
+              aria-pressed={orbHours === hrs} onClick={() => setOrbHours(hrs)}
+              style={{ padding: '1px 8px', fontSize: '.68rem', fontFamily: font.mono }}
+            >
+              {hrs}h
+            </Button>
+          ))}
+        </span>
+        {!bands.complete && <Badge tone="info">range forming · first {orbHours}h</Badge>}
+        {breach.ceAbove && <Badge tone="neg">⚠ CE ν above range</Badge>}
+        {breach.ceBelow && <Badge tone="neg">⚠ CE ν below range</Badge>}
+        {breach.peAbove && <Badge tone="neg">⚠ PE ν above range</Badge>}
+        {breach.peBelow && <Badge tone="neg">⚠ PE ν below range</Badge>}
+        <span style={{ marginLeft: 'auto', color: color.textMuted, fontSize: '.66rem' }}>
+          shaded band = each side's first-{orbHours}h range · a break outside its own band plays a sound · side rising = being bought
+        </span>
       </div>
     </div>
   );
